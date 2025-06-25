@@ -107,7 +107,7 @@ export default function RecordScreen() {
             <TouchableOpacity
               key={shape.id}
               onPress={() => handleShape(shape.id)}
-              className={`flex-row items-center mx-2 px-4 py-2 rounded-full  gap-1 ${shape.id === shapeType ? "bg-indigo-light dark:bg-indigo-dark" : "bg-card-light dark:bg-card-dark"}`}
+              className={`flex-row items-center mx-2 px-4 py-2 rounded-full  gap-1 ${shape.id === shapeType ? "bg-indigo-light dark:bg-indigo-dark" : "bg-background-light dark:bg-background-dark"}`}
             >
               <Icon name={shape.icon} />
               <Text>{shape.name}</Text>
