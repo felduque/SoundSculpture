@@ -26,7 +26,6 @@ export class SculptureExporter {
   static async exportImage(sculpture: Sculpture): Promise<void> {
     try {
       const imageUri = sculpture.uri; 
-      console.log(imageUri)
       if (!imageUri) {
         throw new Error("No se encontró la imagen de la escultura");
       }

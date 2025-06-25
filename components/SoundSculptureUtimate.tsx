@@ -1,5 +1,6 @@
 import { shapeColors, shapeTypes } from "@/constants/shapes";
 import { useAudioRecording } from "@/hooks/useAudioRecording";
+import { useSculptureData } from "@/hooks/useSculptureData";
 import { Sculpture, ShapeType } from "@/types";
 import { audioToShape } from "@/utils/shapeGenerator";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -17,6 +18,7 @@ import { FirstSculpture } from "./SoundSculpture/FirstSculpture";
 import { Sculpture3D } from "./SoundSculpture/Sculpture3D";
 import SculptureVisualization from "./SoundSculpture/SculptureVisualize";
 import Icon from "./ui/IconLucide";
+import Loading from "./ui/Loading/Loading";
 
 const { width, height } = Dimensions.get("window");
 export const SoundSculptureUltimateL: React.FC = () => {
@@ -35,7 +37,11 @@ export const SoundSculptureUltimateL: React.FC = () => {
     isRecording,
   } = useAudioRecording();
 
+  const { data, loading, setLoading, error, refreshSculptures, saveSculpture } =
+    useSculptureData();
+
   const handleStartRecording = useCallback(async (): Promise<void> => {
+    setLoading(true);
     await startRecording();
   }, [startRecording]);
 
@@ -65,25 +71,33 @@ export const SoundSculptureUltimateL: React.FC = () => {
       };
 
       setCurrentSculpture(sculpture);
-      setSculptures((prev) => [...prev, sculpture]);
-
+      await saveSculpture(sculpture);
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       Alert.alert("Error", "No se pudo Procesar la grabacion");
     }
-  }, [stopRecording, shapeType]);
+  }, [stopRecording, shapeType, saveSculpture]);
   // auto pause 5 seconds
   useEffect(() => {
     if (isRecording && recordingState.duration >= 5000) {
       handleStopRecording();
     }
   }, [isRecording, recordingState.duration, handleStopRecording]);
+
+  const handleShape = (e: ShapeType) => {
+    setCurrentSculpture(null);
+    setShapeType(e);
+  };
+  const get = async () => {
+    await refreshSculptures();
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
       <StatusBar barStyle="light-content" backgroundColor="#111827" />
       {/* header */}
       <View className="bg-surface-light dark:bg-surface-dark p-4 border-b border-border-light dark:border-border-dark">
-        <Text className="font-bold text-primary-light dark:text-primary-dark text-2xl text-center">
+        <Text className="font-bold text-indigo-light dark:text-indigo-dark text-2xl text-center">
           🎵 Sound Sculpture
         </Text>
         <Text className="mt-1 text-text-secondary-light dark:text-text-secondary-dark text-sm text-center">
@@ -102,7 +116,7 @@ export const SoundSculptureUltimateL: React.FC = () => {
           {shapeTypes.map((shape) => (
             <TouchableOpacity
               key={shape.id}
-              onPress={() => setShapeType(shape.id)}
+              onPress={() => handleShape(shape.id)}
               className={`flex-row items-center mx-2 px-4 py-2 rounded-full  gap-1 ${shape.id === shapeType ? "bg-indigo-light dark:bg-indigo-dark" : "bg-card-light dark:bg-card-dark"}`}
             >
               <Icon name={shape.icon} />
@@ -115,9 +129,7 @@ export const SoundSculptureUltimateL: React.FC = () => {
 
       <View className="relative flex-1 bg-red-light dark:bg-surface-dark">
         {shapeType === "3d" ? (
-          <Sculpture3D 
-            data={currentSculpture}
-          />
+          <Sculpture3D data={currentSculpture} />
         ) : (
           <SculptureVisualization
             sculpture={currentSculpture}
@@ -137,6 +149,8 @@ export const SoundSculptureUltimateL: React.FC = () => {
               Creado: {currentSculpture.createdAt}
             </Text>
           </View>
+        ) : loading ? (
+          <Loading variant="sculpture" color="#10b981" size="full" fullScreen />
         ) : (
           <FirstSculpture />
         )}
@@ -147,25 +161,33 @@ export const SoundSculptureUltimateL: React.FC = () => {
         <View className="items-center mb-4">
           <TouchableOpacity
             onPress={isRecording ? handleStopRecording : handleStartRecording}
-            className={`w-20 h-20 rounded-full items-center justify-center bg-indigo-light dark:bg-indigo-dark shadow-lg `}
+            className={`w-20 h-20 rounded-full items-center justify-center shadow-lg ${isRecording ? "bg-error-light dark:bg-error-dark " : "bg-indigo-light dark:bg-indigo-dark "} `}
           >
             <Icon name={isRecording ? "MicOff" : "Mic"} size={32} />
           </TouchableOpacity>
+          {/* <TouchableOpacity
+            onPress={get}
+            className={`w-10 h-10 rounded-full items-center justify-center bg-indigo-light dark:bg-indigo-dark shadow-lg `}
+          >
+            <Icon name="Box" size={32} />
+          </TouchableOpacity> */}
         </View>
         {isRecording && (
-          <View className="items-center mb-4">
-            <Text className="mb-2 font-bold text-red-400 text-lg">
-              🔴 Grabando... {(recordingState.duration / 1000).toFixed(1)}s
-            </Text>
-            <View className="bg-gray-700 rounded-full w-full h-2 overflow-hidden">
-              <View
-                className="bg-red-500 rounded-full h-full transition-all duration-100"
-                style={{
-                  width: `${(recordingState.duration / 5000) * 100}%`,
-                }}
-              />
+          <View className="relative bg-indigo-dark dark:bg-indigo-light rounded-full w-full h-4 overflow-hidden">
+            {/* Barra de progreso */}
+            <View
+              className="bg-indigo-light dark:bg-indigo-dark rounded-full h-full transition-all duration-100"
+              style={{
+                width: `${(recordingState.duration / 5000) * 100}%`,
+              }}
+            />
+
+            {/* Texto centrado */}
+            <View className="absolute inset-0 justify-center items-center">
+              <Text className="font-bold text-white text-xs">
+                {(recordingState.duration / 1000).toFixed(1)}s / 5.0s
+              </Text>
             </View>
-            <Text>Maximo 5 segundos</Text>
           </View>
         )}
       </View>
