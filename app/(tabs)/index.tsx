@@ -1,197 +1,179 @@
-import { ThemedText } from "@/components/ThemedText";
-import { ThemedView } from "@/components/ThemedView";
-import { useSculptures } from "@/contexts/SculptureContext";
-import { useThemeColor } from "@/hooks/useThemeColor";
-import { FontAwesome } from '@expo/vector-icons';
-import { Audio } from 'expo-av';
-import * as Haptics from 'expo-haptics';
-import React, { useEffect, useState } from "react";
-import { Alert, SafeAreaView, TouchableOpacity, View } from "react-native";
+import { FirstSculpture } from "@/components/SoundSculpture/FirstSculpture";
+import { Sculpture3D } from "@/components/SoundSculpture/Sculpture3D";
+import SculptureVisualization from "@/components/SoundSculpture/SculptureVisualize";
+import Icon from "@/components/ui/IconLucide";
+import { Loading } from "@/components/ui/Loading/Loading";
+import { shapeColors, shapeTypes } from "@/constants/shapes";
+import { useAudioRecording } from "@/hooks/useAudioRecording";
+import { useSculptureData } from "@/hooks/useSculptureData";
+import { Sculpture, ShapeType } from "@/types";
+import { audioToShape } from "@/utils/shapeGenerator";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Alert,
+  Dimensions,
+  ScrollView,
+  StatusBar,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
+const { width, height } = Dimensions.get("window");
 export default function RecordScreen() {
-  const [recording, setRecording] = useState<Audio.Recording | null>(null);
-  const [recordingStatus, setRecordingStatus] = useState<'idle' | 'recording' | 'paused'>('idle');
-  const [audioPermission, setAudioPermission] = useState<boolean>(false);
-  const [recordingDuration, setRecordingDuration] = useState<number>(0);
-  const [recordingName, setRecordingName] = useState<string>("");
-  const [isSaving, setIsSaving] = useState<boolean>(false);
-  
-  const backgroundColor = useThemeColor({}, 'background');
-  const textColor = useThemeColor({}, 'text');
-  const tintColor = useThemeColor({}, 'tint');
-  
-  // Usar el contexto de esculturas
-  const { saveSculpture } = useSculptures();
+  const [currentSculpture, setCurrentSculpture] = useState<Sculpture | null>(
+    null
+  );
+  const sculptureViewRef = useRef<View>(null);
+  const [shapeType, setShapeType] = useState<ShapeType>("wave");
 
-  useEffect(() => {
-    // Get permission to record audio
-    const getPermission = async () => {
-      const { status } = await Audio.requestPermissionsAsync();
-      setAudioPermission(status === 'granted');
-    };
+  const { startRecording, stopRecording, recordingState, isRecording } =
+    useAudioRecording();
 
-    getPermission();
-    return () => {
-      if (recording) {
-        stopRecording();
-      }
-    };
-  }, [ ]);
+  const { loading, setLoading, error, saveSculpture } =
+    useSculptureData();
 
-  // Timer for recording duration
-  useEffect(() => {
-    let interval: number;
-    if (recordingStatus === 'recording') {
-      interval = setInterval(() => {
-        setRecordingDuration((prev) => prev + 1);
-      }, 1000);
-    }
+  const handleStartRecording = useCallback(async (): Promise<void> => {
+    setLoading(true);
+    await startRecording();
+  }, [startRecording, setLoading]);
 
-    return () => clearInterval(interval);
-  }, [recordingStatus]);
-
-  const startRecording = async () => {
+  const handleStopRecording = useCallback(async (): Promise<void> => {
     try {
-      // Check if permission is granted
-      if (!audioPermission) {
-        console.log('No permission to record');
+      const result = await stopRecording();
+      if (!result) {
+        Alert.alert("Error", "No se pudo procesar la grabación");
         return;
       }
 
-      // Configure recording session
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
+      const sculpture: Sculpture = {
+        id: Date.now(),
+        audioData: result.audioData,
+        shapeType,
+        color: shapeColors[Math.floor(Math.random() * shapeColors.length)],
+        points: audioToShape({
+          audioData: result.audioData,
+          shapeType,
+          screenWidth: width,
+          screenHeight: height - 200, // Espacio para controles
+        }),
+        duration: result.duration,
+        createdAt: new Date().toLocaleTimeString(),
+        uri: result.uri,
+        name: `${shapeTypes.find((t) => t.id === shapeType)?.name} ${new Date().toLocaleTimeString()}`,
+      };
 
-      // Create new recording instance
-      const { recording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
-
-      setRecording(recording);
-      setRecordingStatus('recording');
-      setRecordingDuration(0);
-      setRecordingName(`Escultura_${new Date().toISOString().split('T')[0]}_${Date.now()}`);
-      
-      console.log('Recording started');
-    } catch (err) {
-      console.error('Failed to start recording', err);
+      setCurrentSculpture(sculpture);
+      await saveSculpture(sculpture);
+       
+    } catch (error) {
+      Alert.alert("Error", "No se pudo Procesar la grabacion");
     }
-  };
-
-  const stopRecording = async () => {
-    if (!recording) return;
-
-    try {
-      setIsSaving(true);
-      await recording.stopAndUnloadAsync();
-      const uri = recording.getURI();
-      console.log('Recording stopped and stored at', uri);
-      
-      // Guardar la grabación usando el servicio
-      if (uri) {
-        try {
-          const savedSculpture = await saveSculpture(recording, recordingName, recordingDuration);
-          console.log('Escultura guardada:', savedSculpture);
-          
-          // Feedback háptico de éxito
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          
-          // Mostrar mensaje de éxito
-          Alert.alert(
-            "Grabación Completada",
-            "Tu escultura sonora ha sido guardada. Puedes visualizarla en la galería.",
-            [{ text: "OK" }]
-          );
-        } catch (error) {
-          console.error('Error al guardar la escultura:', error);
-          Alert.alert("Error", "No se pudo guardar la grabación. Inténtalo de nuevo.");
-        }
-      }
-
-      setRecordingStatus('idle');
-      setRecording(null);
-    } catch (err) {
-      console.error('Failed to stop recording', err);
-      Alert.alert("Error", "Ocurrió un error al detener la grabación.");
-    } finally {
-      setIsSaving(false);
+  }, [stopRecording, shapeType, saveSculpture]);
+  // auto pause 5 seconds
+  useEffect(() => {
+    if (isRecording && recordingState.duration >= 5000) {
+      handleStopRecording();
     }
-  };
+  }, [isRecording, recordingState.duration, handleStopRecording]);
 
-  const toggleRecording = () => {
-    if (recordingStatus === 'idle') {
-      startRecording();
-    } else {
-      stopRecording();
-    }
+  const handleShape = (e: ShapeType) => {
+    setCurrentSculpture(null);
+    setShapeType(e);
   };
-
-  // Format seconds to mm:ss
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
   return (
-    <SafeAreaView className="flex-1 px-5 pt-10 pb-5" style={{ backgroundColor }}>
-      <View className="flex-1 justify-center items-center">
-        <ThemedText type="title" className="mb-10 text-center">
-          Sound Sculpture
-        </ThemedText>
-        
-        <ThemedText type="subtitle" className="mb-5 text-center">
-          Esculpir con Sonidos
-        </ThemedText>
-
-        <ThemedView 
-          className="justify-center items-center mb-10 rounded-full w-64 h-64"
-          style={{
-            backgroundColor: recordingStatus === 'recording' ? 'rgba(255, 59, 48, 0.2)' : 'rgba(10, 126, 164, 0.1)',
-            borderWidth: 1,
-            borderColor: recordingStatus === 'recording' ? '#FF3B30' : tintColor,
+    <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
+      <StatusBar barStyle="light-content" backgroundColor="#111827" />
+      {/* header */}
+      <View className="bg-surface-light dark:bg-surface-dark p-4 border-b border-border-light dark:border-border-dark">
+        <Text className="font-bold text-2xl text-center text-indigo-light dark:text-indigo-dark">
+          🎵 Sound Sculpture
+        </Text>
+        <Text className="mt-1 text-center text-sm text-text-secondary-light dark:text-text-secondary-dark">
+          Convierte sonidos en arte
+        </Text>
+      </View>
+      {/* Form selector */}
+      <View className="bg-surface-light dark:bg-surface-dark p-3">
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{
+            paddingHorizontal: 8,
           }}
         >
-          <TouchableOpacity
-            onPress={toggleRecording}
-            disabled={isSaving}
-            className="justify-center items-center rounded-full w-48 h-48"
-            style={{
-              backgroundColor: recordingStatus === 'recording' ? '#FF3B30' : 
-                            isSaving ? 'rgba(0,0,0,0.3)' : tintColor,
-            }}
-          >
-            {isSaving ? (
-              <ThemedText type="defaultSemiBold" style={{ color: 'white' }}>
-                Guardando...
-              </ThemedText>
-            ) : (
-              <FontAwesome
-                name={recordingStatus === 'recording' ? 'stop' : 'microphone'}
-                size={48}
-                color="white"
-              />
-            )}
-          </TouchableOpacity>
-        </ThemedView>
+          {shapeTypes.map((shape) => (
+            <TouchableOpacity
+              key={shape.id}
+              onPress={() => handleShape(shape.id)}
+              className={`flex-row items-center mx-2 px-4 py-2 rounded-full  gap-1 ${shape.id === shapeType ? "bg-indigo-light dark:bg-indigo-dark" : "bg-card-light dark:bg-card-dark"}`}
+            >
+              <Icon name={shape.icon} />
+              <Text>{shape.name}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+      {/* Visualized */}
 
-        <ThemedText type="defaultSemiBold" className="mb-2 text-center">
-          {recordingStatus === 'recording' ? 'Grabando...' : 'Presiona para grabar'}
-        </ThemedText>
-
-        {recordingStatus === 'recording' && (
-          <ThemedText type="default" className="text-center">
-            {formatTime(recordingDuration)}
-          </ThemedText>
+      <View className="relative flex-1 bg-red-light dark:bg-surface-dark">
+        {shapeType === "3d" ? (
+          <Sculpture3D data={currentSculpture} />
+        ) : (
+          <SculptureVisualization
+            sculpture={currentSculpture}
+            ref={sculptureViewRef}
+          />
         )}
+        {currentSculpture ? (
+          <View className="bottom-4 left-4 absolute bg-black/70 p-3 rounded-lg max-w-xs">
+            <Text className="font-medium text-white">
+              {currentSculpture.name}
+            </Text>
+            <Text className="text-gray-400 text-sm">
+              {currentSculpture.points.length} puntos •{" "}
+              {(currentSculpture.duration / 1000).toFixed(1)}s
+            </Text>
+            <Text className="text-gray-400 text-sm">
+              Creado: {currentSculpture.createdAt}
+            </Text>
+          </View>
+        ) : loading ? (
+          <Loading variant="sculpture" color="#10b981" size="full" fullScreen />
+        ) : (
+          <FirstSculpture />
+        )}
+      </View>
 
-        <View className="mt-10">
-          <ThemedText type="default" className="text-center">
-            Cada sonido genera geometrías únicas que puedes manipular
-          </ThemedText>
+      {/* controllers recorder */}
+      <View className="bg-surface-light dark:bg-surface-dark p-6">
+        <View className="items-center">
+          <TouchableOpacity
+            onPress={isRecording ? handleStopRecording : handleStartRecording}
+            className={`w-20 h-20 rounded-full items-center justify-center shadow-lg ${isRecording ? "bg-error-light dark:bg-error-dark " : "bg-indigo-light dark:bg-indigo-dark "} `}
+          >
+            <Icon name={isRecording ? "MicOff" : "Mic"} size={32} />
+          </TouchableOpacity>
         </View>
+        {isRecording && (
+          <View className="relative bg-indigo-dark dark:bg-indigo-light rounded-full w-full h-4 overflow-hidden">
+            {/* Barra de progreso */}
+            <View
+              className="bg-indigo-light dark:bg-indigo-dark rounded-full h-full transition-all duration-100"
+              style={{
+                width: `${(recordingState.duration / 5000) * 100}%`,
+              }}
+            />
+
+            {/* Texto centrado */}
+            <View className="absolute inset-0 justify-center items-center">
+              <Text className="font-bold text-white text-xs">
+                {(recordingState.duration / 1000).toFixed(1)}s / 5.0s
+              </Text>
+            </View>
+          </View>
+        )}
       </View>
     </SafeAreaView>
   );

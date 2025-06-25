@@ -25,7 +25,7 @@ export interface Sculpture {
   name?: string;
 }
 
-export type ShapeType = "wave" | "spiral" | "flower" | "mountain" | "3d";
+export type ShapeType = "wave" | "spiral" | "flower" | "mountain" | "3d" | "all";
 
 export interface ShapeTypeConfig {
   id: ShapeType;

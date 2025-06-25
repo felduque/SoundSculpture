@@ -74,9 +74,6 @@ export class SculptureService {
         from: uri,
         to: destinationUri,
       });
-      console.log("=======================================")
-      console.log(`Escultura guardada en: ${SCULPTURES_DIRECTORY}`);
-      console.log("=======================================")
       // Crear objeto de escultura
       const sculpture: SoundSculpture = {
         id,

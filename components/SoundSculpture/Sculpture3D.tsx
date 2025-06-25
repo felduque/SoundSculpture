@@ -3,11 +3,11 @@ import { FontAwesome } from "@expo/vector-icons";
 import { Audio } from "expo-av";
 import React, { useEffect, useRef, useState } from "react";
 import {
-    Animated,
-    Dimensions,
-    PanResponder,
-    TouchableOpacity,
-    View
+  Animated,
+  Dimensions,
+  PanResponder,
+  TouchableOpacity,
+  View
 } from "react-native";
 
 // Importar el tipo desde el servicio
@@ -25,9 +25,6 @@ const Shape3D = ({
   rotation: Animated.Value;
   position: { x: Animated.Value; y: Animated.Value };
 }) => {
-  console.log("=======================================");
-  console.log(color, size, rotation, position);
-  console.log("=======================================");
   const animatedStyles = {
     transform: [
       { translateX: position.x },

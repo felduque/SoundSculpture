@@ -29,8 +29,18 @@ export const shapeTypes: ShapeTypeConfig[] = [
     id: "3d",
     name: "3D",
     icon: "Diameter",
-    description: "Patron 3D"
-  }
+    description: "Patron 3D",
+  },
+];
+
+export const shapesFilter: ShapeTypeConfig[] = [
+  {
+    id: "all",
+    name: "Todos",
+    icon: "Funnel",
+    description: "Todas las esculturas",
+  },
+  ...shapeTypes,
 ];
 
 export const shapeColors: string[] = [

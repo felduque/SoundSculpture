@@ -1,4 +1,5 @@
-import { SculptureProvider } from "@/contexts/SculptureContext";
+import "../global.css";
+
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { SculptureService } from "@/services/SculptureService";
 import {
@@ -9,9 +10,9 @@ import {
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import "react-native-reanimated";
-import "./global.css";
+
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -39,16 +40,12 @@ export default function RootLayout() {
   }
 
   return (
-    <SculptureProvider>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="+not-found" />
-          <Stack.Screen name="export" options={{ title: "Exportar" }} />
-          <Stack.Screen name="visualize" options={{ title: "Visualizar" }} />
         </Stack>
         <StatusBar style="auto" />
       </ThemeProvider>
-    </SculptureProvider>
   );
 }
