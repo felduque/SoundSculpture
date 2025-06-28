@@ -23,15 +23,17 @@ export interface Sculpture {
   createdAt: string;
   uri?: string;
   name?: string;
+  thumbnail?: string;
 }
 
-export type ShapeType = "wave" | "spiral" | "flower" | "mountain" | "3d" | "all";
+export type ShapeType = "wave" | "spiral" | "flower" | "mountain" | "galaxy" | "crystal" | "dna" | "mandala" | "tornado" | "3d" | "all";
 
 export interface ShapeTypeConfig {
   id: ShapeType;
   name: string;
   icon: keyof typeof icons;
   description?: string;
+  imageUrl?: string;
 }
 
 export interface AudioAnalysisResult {
@@ -44,4 +46,13 @@ export interface RecordingState {
   isRecording: boolean;
   duration: number;
   isPaused: boolean;
+}
+
+export interface ExportFormat {
+  id: string;
+  name: string;
+  extension: string;
+  icon: keyof typeof icons;
+  description: string;
+  mimeType: string;
 }

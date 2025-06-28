@@ -1,4 +1,5 @@
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { ExportModal } from "@/components/SculptureExport/ExportModal";
 import Icon from "@/components/ui/IconLucide";
 import { shapesFilter, shapeTypes } from "@/constants/shapes";
 import { useSculptureData } from "@/hooks/useSculptureData";
@@ -26,6 +27,8 @@ const CARD_WIDTH = (width - 48) / 2;
 export default function NewGallery() {
   const { t } = useTranslation();
   const [shapeType, setShapeType] = useState<ShapeType>("all");
+  const [selectedSculpture, setSelectedSculpture] = useState<Sculpture | null>(null);
+  const [showExportModal, setShowExportModal] = useState(false);
   const { data, loading, filteredSculpture } = useSculptureData();
   const viewShotRef = useRef(null);
 
@@ -65,6 +68,11 @@ export default function NewGallery() {
     [filteredSculpture]
   );
 
+  const handleExportSculpture = (sculpture: Sculpture) => {
+    setSelectedSculpture(sculpture);
+    setShowExportModal(true);
+  };
+
   const renderGalleryItem: ListRenderItem<Sculpture> = ({ item, index }) => {
     const shape = shapeTypes.find((e) => e.id === item.shapeType) as ShapeTypeConfig;
     
@@ -82,24 +90,38 @@ export default function NewGallery() {
           }}
         >
           <View className="relative">
+            {/* Use shape preview image */}
             <Image
-              source={{ uri: "https://picsum.photos/200/200?random=1" }}
+              source={{ 
+                uri: shape?.imageUrl || "https://images.pexels.com/photos/1029604/pexels-photo-1029604.jpeg?auto=compress&cs=tinysrgb&w=400"
+              }}
               className="w-full h-40"
               resizeMode="cover"
             />
             <View
               className="absolute inset-0"
-              style={{ backgroundColor: "rgba(0,0,0,0.3)" }}
+              style={{ backgroundColor: item.color + "40" }} // Add transparency to sculpture color
             />
-            <TouchableOpacity
-              className="top-3 right-3 absolute bg-white p-2 rounded-full"
-              style={{ backgroundColor: "rgba(255,255,255,0.3)" }}
-            >
-              <Icon name="Heart" size={16} color="#ffffff" />
-            </TouchableOpacity>
+            
+            {/* Action Buttons */}
+            <View className="top-3 right-3 absolute flex-row gap-2">
+              <TouchableOpacity
+                onPress={() => handleExportSculpture(item)}
+                className="bg-white/90 p-2 rounded-full"
+              >
+                <Icon name="Download" size={16} color="#3b82f6" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                className="bg-white/90 p-2 rounded-full"
+              >
+                <Icon name="Heart" size={16} color="#ef4444" />
+              </TouchableOpacity>
+            </View>
+            
+            {/* Shape Badge */}
             <View
               className="bottom-3 left-3 absolute flex-row items-center gap-1 px-2 py-1 rounded-full"
-              style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+              style={{ backgroundColor: "rgba(0,0,0,0.7)" }}
             >
               <Icon name={shape?.icon} size={12} color="#fff" />
               <Text className="font-medium text-white text-xs">
@@ -113,16 +135,17 @@ export default function NewGallery() {
               {item.name}
             </Text>
             <Text className="mb-2 text-neutral-500 text-sm dark:text-neutral-400">
-              {shape?.description}
+              {item.points.length} points • {(item.duration / 1000).toFixed(1)}s
             </Text>
 
             <View className="flex-row justify-between items-center">
               <Text className="text-neutral-400 text-xs dark:text-neutral-500">
                 {item.createdAt}
               </Text>
-              <TouchableOpacity className="bg-indigo-100 dark:bg-indigo-900 p-2 rounded-full">
-                <Icon name="ExternalLink" size={12} color="#6366f1" />
-              </TouchableOpacity>
+              <View 
+                className="w-4 h-4 rounded-full"
+                style={{ backgroundColor: item.color }}
+              />
             </View>
           </View>
         </TouchableOpacity>
@@ -133,16 +156,18 @@ export default function NewGallery() {
   const headerComponent = () => (
     <View>
       {/* Header */}
-      <View className="flex-row justify-center items-center border-neutral-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 border-b">
-        <View
-          className="p-3 rounded-2xl"
-          style={{ backgroundColor: "#6366f1" }}
-        >
-          <Icon name="GalleryThumbnails" size={28} color="#ffffff" />
+      <View className="flex-row justify-between items-center border-neutral-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 border-b">
+        <View className="flex-row items-center">
+          <View
+            className="p-3 rounded-2xl"
+            style={{ backgroundColor: "#6366f1" }}
+          >
+            <Icon name="GalleryThumbnails" size={28} color="#ffffff" />
+          </View>
+          <Text className="ml-4 font-bold text-2xl text-neutral-800 dark:text-neutral-100">
+            {t.gallery.title}
+          </Text>
         </View>
-        <Text className="ml-4 font-bold text-2xl text-neutral-800 dark:text-neutral-100">
-          {t.gallery.title}
-        </Text>
         <ThemeToggle />
       </View>
 
@@ -192,7 +217,7 @@ export default function NewGallery() {
         </ScrollView>
       </View>
 
-      {/* Stats Section */}
+      {/* Enhanced Stats Section */}
       <View className="border-neutral-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 border-b">
         <View className="flex-row justify-around">
           <View className="items-center">
@@ -205,18 +230,18 @@ export default function NewGallery() {
           </View>
           <View className="items-center">
             <Text className="font-bold text-purple-600 text-xl dark:text-purple-400">
-              23
+              {shapeTypes.length}
             </Text>
             <Text className="text-neutral-500 text-sm dark:text-neutral-400">
-              {t.gallery.stats.average}
+              Shape Types
             </Text>
           </View>
           <View className="items-center">
             <Text className="font-bold text-emerald-600 text-xl dark:text-emerald-400">
-              {shapeTypes.length}
+              {data.reduce((acc, sculpture) => acc + sculpture.duration, 0) / 1000 / 60 | 0}m
             </Text>
             <Text className="text-neutral-500 text-sm dark:text-neutral-400">
-              {t.gallery.stats.categories}
+              Total Audio
             </Text>
           </View>
         </View>
@@ -249,20 +274,15 @@ export default function NewGallery() {
         />
       </View>
 
-      <TouchableOpacity
-        onPress={handleCaptureAndSave}
-        className="right-6 bottom-6 absolute shadow-lg p-4 rounded-full"
-        style={{
-          backgroundColor: "#6366f1",
-          shadowColor: "#6366f1",
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 8,
-          elevation: 8,
+      {/* Export Modal */}
+      <ExportModal
+        visible={showExportModal}
+        onClose={() => {
+          setShowExportModal(false);
+          setSelectedSculpture(null);
         }}
-      >
-        <Icon name="Plus" size={24} color="#ffffff" />
-      </TouchableOpacity>
+        sculpture={selectedSculpture}
+      />
     </SafeAreaView>
   );
 }

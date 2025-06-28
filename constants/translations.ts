@@ -35,6 +35,11 @@ export const translations: Record<string, TranslationKeys> = {
         spiral: 'Spiral',
         flower: 'Flower',
         mountain: 'Mountain',
+        galaxy: 'Galaxy',
+        crystal: 'Crystal',
+        dna: 'DNA',
+        mandala: 'Mandala',
+        tornado: 'Tornado',
         '3d': '3D',
       },
       recording: {
@@ -185,6 +190,11 @@ export const translations: Record<string, TranslationKeys> = {
         spiral: 'Espiral',
         flower: 'Flor',
         mountain: 'Montaña',
+        galaxy: 'Galaxia',
+        crystal: 'Cristal',
+        dna: 'ADN',
+        mandala: 'Mandala',
+        tornado: 'Tornado',
         '3d': '3D',
       },
       recording: {

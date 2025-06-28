@@ -69,6 +69,73 @@ export const audioToShape = ({
           size: Math.max(3, size / 2),
         };
         break;
+
+      case 'galaxy':
+        const galaxyArms = 3;
+        const galaxyRadius = 40 + (index / audioData.length) * 100;
+        const galaxyAngle = angle * galaxyArms + (index / audioData.length) * Math.PI * 4;
+        const galaxyNoise = Math.sin(angle * 10) * 20;
+        point = {
+          x: centerX + Math.cos(galaxyAngle) * (galaxyRadius + galaxyNoise) * normalizedAmplitude,
+          y: centerY + Math.sin(galaxyAngle) * (galaxyRadius + galaxyNoise) * normalizedAmplitude,
+          z: amplitude + Math.sin(angle * 5) * 30,
+          size: size * (0.5 + normalizedAmplitude),
+        };
+        break;
+
+      case 'crystal':
+        const crystalFaces = 6;
+        const crystalRadius = 60 + amplitude * 1.2;
+        const crystalAngle = Math.floor(angle * crystalFaces / (Math.PI * 2)) * (Math.PI * 2 / crystalFaces);
+        const crystalHeight = amplitude * 2;
+        point = {
+          x: centerX + Math.cos(crystalAngle) * crystalRadius,
+          y: centerY + Math.sin(crystalAngle) * crystalRadius - crystalHeight / 2,
+          z: amplitude + crystalHeight,
+          size: size * 1.5,
+        };
+        break;
+
+      case 'dna':
+        const dnaHeight = screenHeight * 0.6;
+        const dnaY = centerY - dnaHeight / 2 + (index / audioData.length) * dnaHeight;
+        const dnaRadius = 40 + amplitude * 0.8;
+        const dnaStrand = index % 2 === 0 ? 1 : -1;
+        const dnaAngle = (index / audioData.length) * Math.PI * 8;
+        point = {
+          x: centerX + Math.cos(dnaAngle) * dnaRadius * dnaStrand,
+          y: dnaY,
+          z: amplitude + Math.sin(dnaAngle) * 20,
+          size: size * 0.8,
+        };
+        break;
+
+      case 'mandala':
+        const mandalaLayers = 5;
+        const mandalaLayer = Math.floor((index / audioData.length) * mandalaLayers);
+        const mandalaRadius = 20 + mandalaLayer * 25 + amplitude * 0.5;
+        const mandalaSegments = 8 + mandalaLayer * 4;
+        const mandalaAngle = (index % mandalaSegments) * (Math.PI * 2 / mandalaSegments);
+        point = {
+          x: centerX + Math.cos(mandalaAngle) * mandalaRadius,
+          y: centerY + Math.sin(mandalaAngle) * mandalaRadius,
+          z: amplitude + mandalaLayer * 10,
+          size: size * (1 + mandalaLayer * 0.2),
+        };
+        break;
+
+      case 'tornado':
+        const tornadoHeight = screenHeight * 0.7;
+        const tornadoY = centerY - tornadoHeight / 2 + (index / audioData.length) * tornadoHeight;
+        const tornadoRadius = 20 + (1 - index / audioData.length) * 80 + amplitude * 0.5;
+        const tornadoAngle = angle * 5 + (index / audioData.length) * Math.PI * 10;
+        point = {
+          x: centerX + Math.cos(tornadoAngle) * tornadoRadius,
+          y: tornadoY,
+          z: amplitude + Math.sin(tornadoAngle) * 15,
+          size: size * (1 + (1 - index / audioData.length)),
+        };
+        break;
         
       default: // wave
         const radius = 60 + amplitude * radiusMultiplier;
