@@ -1,3 +1,4 @@
+import { ThemeToggle } from "@/components/ThemeToggle";
 import Icon from "@/components/ui/IconLucide";
 import { shapesFilter, shapeTypes } from "@/constants/shapes";
 import { useSculptureData } from "@/hooks/useSculptureData";
@@ -55,7 +56,7 @@ export default function NewGallery() {
     }
   }, []);
 
-  
+
   const handleSearch = useCallback(
     async (shape: ShapeType) => {
       handleShape(shape)
@@ -78,7 +79,7 @@ export default function NewGallery() {
     return (
       <View
         style={{
-          width: CARD_WIDTH,
+          width: CARD_WIDTH, 
           marginBottom: 20,
         }}
       >
@@ -163,8 +164,8 @@ export default function NewGallery() {
         <Text className="ml-4 font-bold text-2xl text-neutral-800 dark:text-neutral-100">
           Tu Galería
         </Text>
+        <ThemeToggle />
       </View>
-
       {/* Filter Section */}
       <View className="bg-neutral-50 dark:bg-neutral-900 py-4">
         <ScrollView
