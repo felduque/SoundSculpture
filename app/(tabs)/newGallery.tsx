@@ -119,7 +119,7 @@ export default function NewGallery() {
               {item.name}
             </Text>
             <Text className="mb-2 text-neutral-500 text-sm dark:text-neutral-400">
-              {item.points.length} points • {(item.duration / 1000).toFixed(1)}s
+              {item?.points ? `${item.points.length} points • ${(item.duration / 1000).toFixed(1)}s` : '0 points • 0.0s'}
             </Text>
 
             <View className="flex-row justify-between items-center">
