@@ -14,19 +14,18 @@ import { audioToShape } from "@/utils/shapeGenerator";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
-  Dimensions,
   ScrollView,
   StatusBar,
   Text,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const { width, height } = Dimensions.get("window");
-
 export default function RecordScreen() {
   const { t } = useTranslation();
+  const { width, height } = useWindowDimensions();
   const [currentSculpture, setCurrentSculpture] = useState<Sculpture | null>(null);
   const [showExportModal, setShowExportModal] = useState(false);
   const sculptureViewRef = useRef<View>(null);
@@ -70,7 +69,7 @@ export default function RecordScreen() {
     } catch (error) {
       Alert.alert(t.common.error, t.errors.recording.processingFailed);
     }
-  }, [stopRecording, shapeType, saveSculpture, t]);
+  }, [stopRecording, shapeType, saveSculpture, t, width, height]);
 
   useEffect(() => {
     if (isRecording && recordingState.duration >= 5000) {
@@ -192,6 +191,7 @@ export default function RecordScreen() {
         visible={showExportModal}
         onClose={() => setShowExportModal(false)}
         sculpture={currentSculpture}
+        viewRef={sculptureViewRef}
       />
     </SafeAreaView>
   );

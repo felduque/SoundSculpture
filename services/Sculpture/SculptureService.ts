@@ -94,7 +94,7 @@ export class SculptureService {
 
   static async getFilteredSculptures(search: {
     for: "all" | "id";
-    shape: ShapeType;
+    shape: ShapeType | "all";
     text?: string;
   }): Promise<Sculpture[]> {
     try {

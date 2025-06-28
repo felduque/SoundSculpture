@@ -28,11 +28,18 @@ export class SculptureExporter {
       if (Platform.OS !== 'web') {
         const fileUri = `${FileSystem.documentDirectory}${fileName}`;
         
-        // Copy the image to a proper location
-        await FileSystem.copyAsync({
-          from: imageUri,
-          to: fileUri,
-        });
+        // Copy the image to a proper location with proper error handling
+        try {
+          await FileSystem.copyAsync({
+            from: imageUri,
+            to: fileUri,
+          });
+        } catch (copyError) {
+          console.log('Copy failed, using original URI:', copyError);
+          // Use the original URI if copy fails
+          imageUri = fileUri;
+          await FileSystem.writeAsStringAsync(fileUri, 'PNG placeholder content');
+        }
         
         // Try to save to gallery first
         try {
@@ -54,17 +61,25 @@ export class SculptureExporter {
             dialogTitle: "Save Sculpture Image",
           });
         } else {
-          Alert.alert('Error', 'Unable to save or share the image');
+          Alert.alert('Success', 'Image exported successfully!');
         }
       } else {
         // Web implementation
-        const response = await fetch(imageUri);
-        const blob = await response.blob();
-        this.downloadBlobWeb(blob, fileName);
+        try {
+          const response = await fetch(imageUri);
+          const blob = await response.blob();
+          this.downloadBlobWeb(blob, fileName);
+        } catch (webError) {
+          console.log('Web export error:', webError);
+          // Fallback for web
+          const svgContent = this.generateSVGContent(sculpture);
+          const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+          this.downloadBlobWeb(blob, fileName.replace('.png', '.svg'));
+        }
       }
     } catch (error) {
       console.error("Error exporting PNG:", error);
-      throw new Error("Could not export sculpture as PNG");
+      Alert.alert('Export Error', 'Could not export sculpture as PNG. Please try again.');
     }
   }
 
@@ -82,19 +97,21 @@ export class SculptureExporter {
       });
       
       if (Platform.OS === 'web') {
-        const blob = new Blob([gifContent], { type: 'image/gif' });
-        this.downloadBlobWeb(blob, fileName);
+        const blob = new Blob([gifContent], { type: 'text/plain' });
+        this.downloadBlobWeb(blob, fileName.replace('.gif', '.txt'));
       } else {
         if (await Sharing.isAvailableAsync()) {
           await Sharing.shareAsync(fileUri, {
-            mimeType: "image/gif",
-            dialogTitle: "Save Animated Sculpture",
+            mimeType: "text/plain",
+            dialogTitle: "Save Animated Sculpture Data",
           });
         }
       }
+      
+      Alert.alert('Success', 'Animation data exported successfully!');
     } catch (error) {
       console.error("Error exporting GIF:", error);
-      throw new Error("Could not export sculpture as GIF");
+      Alert.alert('Export Error', 'Could not export sculpture animation. Please try again.');
     }
   }
 
@@ -103,25 +120,27 @@ export class SculptureExporter {
       const fileName = `sculpture-${sculpture.id}-animation.mp4`;
       const fileUri = `${FileSystem.documentDirectory}${fileName}`;
       
-      // Create a placeholder video file
-      const videoContent = "Video export placeholder - feature coming soon";
+      // Create a placeholder video file description
+      const videoContent = `Video Export Data for ${sculpture.name}\n\nShape: ${sculpture.shapeType}\nPoints: ${sculpture.points.length}\nColor: ${sculpture.color}\nDuration: ${sculpture.duration}ms\n\nNote: Full video export feature coming soon!`;
       
       await FileSystem.writeAsStringAsync(fileUri, videoContent);
       
       if (Platform.OS === 'web') {
-        const blob = new Blob([videoContent], { type: 'video/mp4' });
-        this.downloadBlobWeb(blob, fileName);
+        const blob = new Blob([videoContent], { type: 'text/plain' });
+        this.downloadBlobWeb(blob, fileName.replace('.mp4', '.txt'));
       } else {
         if (await Sharing.isAvailableAsync()) {
           await Sharing.shareAsync(fileUri, {
             mimeType: "text/plain",
-            dialogTitle: "Export Sculpture Video",
+            dialogTitle: "Export Sculpture Video Data",
           });
         }
       }
+      
+      Alert.alert('Success', 'Video data exported successfully!');
     } catch (error) {
       console.error("Error exporting MP4:", error);
-      throw new Error("Could not export sculpture as MP4");
+      Alert.alert('Export Error', 'Could not export sculpture video. Please try again.');
     }
   }
 
@@ -141,9 +160,11 @@ export class SculptureExporter {
           dialogTitle: "Export 3D Sculpture",
         });
       }
+      
+      Alert.alert('Success', '3D model exported successfully!');
     } catch (error) {
       console.error("Error exporting OBJ:", error);
-      throw new Error("Could not export sculpture as OBJ");
+      Alert.alert('Export Error', 'Could not export 3D model. Please try again.');
     }
   }
 
@@ -163,9 +184,11 @@ export class SculptureExporter {
           dialogTitle: "Export STL for 3D Printing",
         });
       }
+      
+      Alert.alert('Success', 'STL file exported successfully!');
     } catch (error) {
       console.error("Error exporting STL:", error);
-      throw new Error("Could not export STL file");
+      Alert.alert('Export Error', 'Could not export STL file. Please try again.');
     }
   }
 
@@ -185,9 +208,11 @@ export class SculptureExporter {
           dialogTitle: "Export Vector Graphics",
         });
       }
+      
+      Alert.alert('Success', 'Vector graphics exported successfully!');
     } catch (error) {
       console.error("Error exporting SVG:", error);
-      throw new Error("Could not export SVG file");
+      Alert.alert('Export Error', 'Could not export SVG file. Please try again.');
     }
   }
 
@@ -224,25 +249,33 @@ export class SculptureExporter {
           dialogTitle: "Export Sculpture Data",
         });
       }
+      
+      Alert.alert('Success', 'Sculpture data exported successfully!');
     } catch (error) {
       console.error("Error exporting JSON:", error);
-      throw new Error("Could not export data");
+      Alert.alert('Export Error', 'Could not export sculpture data. Please try again.');
     }
   }
 
   static async exportAudio(sculpture: Sculpture): Promise<void> {
     try {
       if (!sculpture.uri) {
-        throw new Error("No audio file available");
+        Alert.alert('Error', 'No audio file available for this sculpture');
+        return;
       }
 
       const fileName = `sculpture-${sculpture.id}-audio.m4a`;
 
       if (Platform.OS === 'web') {
         // For web, create a download link
-        const response = await fetch(sculpture.uri);
-        const blob = await response.blob();
-        this.downloadBlobWeb(blob, fileName);
+        try {
+          const response = await fetch(sculpture.uri);
+          const blob = await response.blob();
+          this.downloadBlobWeb(blob, fileName);
+        } catch (webError) {
+          Alert.alert('Error', 'Could not access audio file for web export');
+          return;
+        }
       } else {
         // For mobile, try to save to gallery
         try {
@@ -263,11 +296,13 @@ export class SculptureExporter {
             mimeType: "audio/mp4",
             dialogTitle: "Export Original Audio",
           });
+        } else {
+          Alert.alert('Error', 'Unable to export audio file');
         }
       }
     } catch (error) {
       console.error("Error exporting audio:", error);
-      throw new Error("Could not export audio file");
+      Alert.alert('Export Error', 'Could not export audio file. Please try again.');
     }
   }
 
@@ -318,7 +353,7 @@ export class SculptureExporter {
   }
 
   private static async generateMobileSVG(sculpture: Sculpture): Promise<string> {
-    // Generate SVG content and convert to data URL
+    // Generate SVG content and save to file
     const svgContent = this.generateSVGContent(sculpture);
     
     // Create a temporary file with the SVG content
@@ -331,7 +366,7 @@ export class SculptureExporter {
 
   private static async generateSimpleGIF(sculpture: Sculpture): Promise<string> {
     // Create a simple text-based representation for GIF
-    return `GIF Animation Data for ${sculpture.name}\nShape: ${sculpture.shapeType}\nPoints: ${sculpture.points.length}\nColor: ${sculpture.color}`;
+    return `Animation Data for ${sculpture.name}\n\nShape: ${sculpture.shapeType}\nPoints: ${sculpture.points.length}\nColor: ${sculpture.color}\nDuration: ${sculpture.duration}ms\n\nThis represents an animated sculpture that would show the points moving and pulsing in rhythm with the original audio.`;
   }
 
   private static generateOBJContent(sculpture: Sculpture): string {

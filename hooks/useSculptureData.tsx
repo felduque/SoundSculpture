@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 
 interface searchType {
   for: "all" | "id";
-  shape: ShapeType;
+  shape: ShapeType | "all";
   text?: string;
 }
 
