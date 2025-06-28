@@ -1,6 +1,8 @@
 import { FirstSculpture } from "@/components/SoundSculpture/FirstSculpture";
 import { Sculpture3D } from "@/components/SoundSculpture/Sculpture3D";
 import SculptureVisualization from "@/components/SoundSculpture/SculptureVisualize";
+import { ExportModal } from "@/components/SculptureExport/ExportModal";
+import { ShapePreview } from "@/components/SculpturePreview/ShapePreview";
 import Icon from "@/components/ui/IconLucide";
 import { Loading } from "@/components/ui/Loading/Loading";
 import { shapeColors, shapeTypes } from "@/constants/shapes";
@@ -26,6 +28,7 @@ const { width, height } = Dimensions.get("window");
 export default function RecordScreen() {
   const { t } = useTranslation();
   const [currentSculpture, setCurrentSculpture] = useState<Sculpture | null>(null);
+  const [showExportModal, setShowExportModal] = useState(false);
   const sculptureViewRef = useRef<View>(null);
   const [shapeType, setShapeType] = useState<ShapeType>("wave");
 
@@ -94,7 +97,7 @@ export default function RecordScreen() {
         </Text>
       </View>
 
-      {/* Shape Selector */}
+      {/* Enhanced Shape Selector */}
       <View className="bg-surface-light dark:bg-surface-dark p-3">
         <ScrollView
           horizontal
@@ -102,24 +105,18 @@ export default function RecordScreen() {
           contentContainerStyle={{ paddingHorizontal: 8 }}
         >
           {shapeTypes.map((shape) => (
-            <TouchableOpacity
+            <ShapePreview
               key={shape.id}
-              onPress={() => handleShape(shape.id)}
-              className={`flex-row items-center mx-2 px-4 py-2 rounded-full gap-1 ${
-                shape.id === shapeType 
-                  ? "bg-indigo-light dark:bg-indigo-dark" 
-                  : "bg-background-light dark:bg-background-dark"
-              }`}
-            >
-              <Icon name={shape.icon} />
-              <Text>{t.recording.shapes[shape.id]}</Text>
-            </TouchableOpacity>
+              shape={shape}
+              isSelected={shape.id === shapeType}
+              onSelect={() => handleShape(shape.id)}
+            />
           ))}
         </ScrollView>
       </View>
 
       {/* Visualization */}
-      <View className="relative flex-1 bg-red-light dark:bg-surface-dark">
+      <View className="relative flex-1 bg-gradient-to-br from-slate-900 to-slate-800">
         {shapeType === "3d" ? (
           <Sculpture3D data={currentSculpture} />
         ) : (
@@ -130,18 +127,29 @@ export default function RecordScreen() {
         )}
         
         {currentSculpture ? (
-          <View className="bottom-4 left-4 absolute bg-black/70 p-3 rounded-lg max-w-xs">
-            <Text className="font-medium text-white">
-              {currentSculpture.name}
-            </Text>
-            <Text className="text-gray-400 text-sm">
-              {currentSculpture.points.length} {t.recording.sculptureInfo.points} •{" "}
-              {(currentSculpture.duration / 1000).toFixed(1)}{t.recording.recording.duration}
-            </Text>
-            <Text className="text-gray-400 text-sm">
-              {t.recording.sculptureInfo.created}: {currentSculpture.createdAt}
-            </Text>
-          </View>
+          <>
+            {/* Sculpture Info */}
+            <View className="bottom-20 left-4 absolute bg-black/70 p-3 rounded-lg max-w-xs">
+              <Text className="font-medium text-white">
+                {currentSculpture.name}
+              </Text>
+              <Text className="text-gray-400 text-sm">
+                {currentSculpture.points.length} {t.recording.sculptureInfo.points} •{" "}
+                {(currentSculpture.duration / 1000).toFixed(1)}{t.recording.recording.duration}
+              </Text>
+              <Text className="text-gray-400 text-sm">
+                {t.recording.sculptureInfo.created}: {currentSculpture.createdAt}
+              </Text>
+            </View>
+
+            {/* Export Button */}
+            <TouchableOpacity
+              onPress={() => setShowExportModal(true)}
+              className="bottom-20 right-4 absolute bg-indigo-600 p-3 rounded-full shadow-lg"
+            >
+              <Icon name="Download" size={24} color="white" />
+            </TouchableOpacity>
+          </>
         ) : loading ? (
           <Loading variant="sculpture" color="#10b981" size="full" fullScreen />
         ) : (
@@ -160,12 +168,12 @@ export default function RecordScreen() {
                 : "bg-indigo-light dark:bg-indigo-dark"
             }`}
           >
-            <Icon name={isRecording ? "MicOff" : "Mic"} size={32} />
+            <Icon name={isRecording ? "MicOff" : "Mic"} size={32} color="white" />
           </TouchableOpacity>
         </View>
         
         {isRecording && (
-          <View className="relative bg-indigo-dark dark:bg-indigo-light rounded-full w-full h-4 overflow-hidden">
+          <View className="relative bg-indigo-dark dark:bg-indigo-light rounded-full w-full h-4 overflow-hidden mt-4">
             <View
               className="bg-indigo-light dark:bg-indigo-dark rounded-full h-full transition-all duration-100"
               style={{ width: `${(recordingState.duration / 5000) * 100}%` }}
@@ -178,6 +186,13 @@ export default function RecordScreen() {
           </View>
         )}
       </View>
+
+      {/* Export Modal */}
+      <ExportModal
+        visible={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        sculpture={currentSculpture}
+      />
     </SafeAreaView>
   );
 }
