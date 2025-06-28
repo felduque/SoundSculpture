@@ -47,6 +47,24 @@ export class SculptureService {
     }
   }
 
+  static async updateSculpture(updatedSculpture: Sculpture): Promise<void> {
+    try {
+      await this.init();
+      
+      const sculptures = await this.getAllSculptures();
+      const index = sculptures.findIndex(s => s.id === updatedSculpture.id);
+      
+      if (index !== -1) {
+        sculptures[index] = updatedSculpture;
+        await sys.writeAsStringAsync(METADATA_FILE, JSON.stringify(sculptures));
+      } else {
+        throw new Error(`Sculpture with ID ${updatedSculpture.id} not found`);
+      }
+    } catch (error) {
+      throw error;
+    }
+  }
+
   private static async saveMetadata(data: Sculpture): Promise<void> {
     try {
       const dataSculpture = await this.getAllSculptures();

@@ -49,6 +49,19 @@ export const useSculptureData = () => {
     }
   };
 
+  const updateSculpture = async (updatedSculpture: Sculpture) => {
+    try {
+      setLoading(true);
+      setError(null);
+      await useSculptureStore.getState().updateSculpture(updatedSculpture);
+      await SculptureService.updateSculpture(updatedSculpture);
+    } catch (error) {
+      setError(t.errors.sculpture.saveFailed);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredSculpture = async (searchData: searchType): Promise<void> => {
     try {
       setLoading(true);
@@ -71,5 +84,6 @@ export const useSculptureData = () => {
     filteredSculpture,
     refreshSculptures,
     saveSculpture,
+    updateSculpture,
   };
 };
