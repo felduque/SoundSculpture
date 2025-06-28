@@ -3,42 +3,42 @@ import { ShapeTypeConfig } from "@/types";
 export const shapeTypes: ShapeTypeConfig[] = [
   {
     id: "wave",
-    name: "Onda",
+    name: "Wave", // Will be translated in components
     icon: "Waves",
-    description: "Forma circular ondulante",
+    description: "Circular wave form",
   },
   {
     id: "spiral",
-    name: "Espiral",
+    name: "Spiral",
     icon: "Rotate3d",
-    description: "Espiral creciente",
+    description: "Growing spiral",
   },
   {
     id: "flower",
-    name: "Flor",
+    name: "Flower",
     icon: "Flower",
-    description: "Patrón floral",
+    description: "Floral pattern",
   },
   {
     id: "mountain",
-    name: "Montaña",
+    name: "Mountain",
     icon: "MountainSnow",
-    description: "Perfil montañoso",
+    description: "Mountain profile",
   },
   {
     id: "3d",
     name: "3D",
     icon: "Diameter",
-    description: "Patron 3D",
+    description: "3D pattern",
   },
 ];
 
 export const shapesFilter: ShapeTypeConfig[] = [
   {
     id: "all",
-    name: "Todos",
+    name: "All", // Will be translated in components
     icon: "Funnel",
-    description: "Todas las esculturas",
+    description: "All sculptures",
   },
   ...shapeTypes,
 ];

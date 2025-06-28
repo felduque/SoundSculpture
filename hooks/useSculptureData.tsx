@@ -1,5 +1,6 @@
 import { SculptureService } from "@/services/Sculpture/SculptureService";
 import { useSculptureStore } from "@/store/sculpture";
+import { useTranslation } from "@/hooks/useTranslation";
 import { Sculpture, ShapeType } from "@/types";
 import { useEffect, useState } from "react";
 
@@ -10,16 +11,17 @@ interface searchType {
 }
 
 export const useSculptureData = () => {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>("");
   const data = useSculptureStore((state) => state.getAllSculptures());
   const [search, setSearch] = useState<searchType | null>(null);
+
   useEffect(() => {
     if (data.length === 0 && search === null) {
-
       refreshSculptures();
     }
-  }, [ ]);
+  }, []);
 
   const refreshSculptures = async () => {
     try {
@@ -28,7 +30,7 @@ export const useSculptureData = () => {
       const sculp = await SculptureService.getAllSculptures();
       await useSculptureStore.getState().addAllSculptures(sculp);
     } catch (error) {
-      setError("Error la cargar las escultureas");
+      setError(t.errors.sculpture.loadFailed);
     } finally {
       setLoading(false);
     }
@@ -41,7 +43,7 @@ export const useSculptureData = () => {
       await useSculptureStore.getState().addSculpture(data);
       await SculptureService.saveSculpture(data);
     } catch (error) {
-      setError("Error la cargar las escultureas");
+      setError(t.errors.sculpture.saveFailed);
     } finally {
       setLoading(false);
     }
@@ -55,7 +57,7 @@ export const useSculptureData = () => {
       const data = await SculptureService.getFilteredSculptures(searchData);
       await useSculptureStore.getState().addAllSculptures(data);
     } catch (error) {
-      setError("Erro al filtrar las esculturas");
+      setError(t.errors.sculpture.filterFailed);
     } finally {
       setLoading(false);
     }

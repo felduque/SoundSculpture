@@ -6,8 +6,11 @@ import IconLucide from "@/components/ui/IconLucide";
 import TabBarBackground from "@/components/ui/TabBarBackground";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
+import { useTranslation } from "@/hooks/useTranslation";
+
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const { t } = useTranslation();
 
   return (
     <Tabs
@@ -28,13 +31,12 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Grabar",
+          title: t.navigation.record,
           tabBarIcon: ({ color }) => (
             <IconLucide 
               name="MicVocal"
               size={28}
               color={color}
-              
             />
           ),
         }}
@@ -42,7 +44,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="newGallery"
         options={{
-          title: "Galería",
+          title: t.navigation.gallery,
           tabBarIcon: ({ color }) => (
             <IconLucide
               name="Image"
@@ -55,7 +57,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="settings"
         options={{
-          title: "Configuracions",
+          title: t.navigation.settings,
           tabBarIcon: ({ color }) => (
             <IconLucide
               name="Settings"

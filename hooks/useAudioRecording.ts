@@ -1,9 +1,11 @@
 import { Audio } from 'expo-av';
 import { useCallback, useRef, useState } from 'react';
 import { Alert } from 'react-native';
+import { useTranslation } from '@/hooks/useTranslation';
 import type { AudioAnalysisResult, RecordingState } from '../types';
 
 export const useAudioRecording = () => {
+  const { t } = useTranslation();
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [recordingState, setRecordingState] = useState<RecordingState>({
     isRecording: false,
@@ -18,7 +20,7 @@ export const useAudioRecording = () => {
       const permission = await Audio.requestPermissionsAsync();
       
       if (permission.status !== 'granted') {
-        Alert.alert('Error', 'Se requieren permisos de micrófono');
+        Alert.alert(t.common.error, t.errors.recording.permissionDenied);
         return;
       }
 
@@ -38,7 +40,6 @@ export const useAudioRecording = () => {
         isPaused: false,
       });
 
-      // Iniciar contador de duración
       durationInterval.current = setInterval(() => {
         setRecordingState(prev => ({
           ...prev,
@@ -48,15 +49,14 @@ export const useAudioRecording = () => {
 
     } catch (err) {
       console.error('Failed to start recording', err);
-      Alert.alert('Error', 'No se pudo iniciar la grabación');
+      Alert.alert(t.common.error, t.errors.recording.startFailed);
     }
-  }, []);
+  }, [t]);
 
   const stopRecording = useCallback(async (): Promise<AudioAnalysisResult | null> => {
     try {
       if (!recording) return null;
 
-      // Limpiar intervalo
       if (durationInterval.current) {
         clearInterval(durationInterval.current);
         durationInterval.current = null;
@@ -74,7 +74,6 @@ export const useAudioRecording = () => {
         throw new Error('No se pudo obtener la URI del archivo');
       }
 
-      // Analizar audio
       const audioData = await analyzeAudio(uri);
       
       setRecording(null);
@@ -87,10 +86,10 @@ export const useAudioRecording = () => {
 
     } catch (error) {
       console.error('Error stopping recording:', error);
-      Alert.alert('Error', 'No se pudo detener la grabación');
+      Alert.alert(t.common.error, t.errors.recording.stopFailed);
       return null;
     }
-  }, [recording, recordingState.duration]);
+  }, [recording, recordingState.duration, t]);
 
   const cancelRecording = useCallback(async (): Promise<void> => {
     try {
@@ -123,7 +122,6 @@ export const useAudioRecording = () => {
   };
 };
 
-// Función auxiliar para análisis de audio
 const analyzeAudio = async (uri: string): Promise<number[]> => {
   try {
     const { sound } = await Audio.Sound.createAsync({ uri });
@@ -134,14 +132,11 @@ const analyzeAudio = async (uri: string): Promise<number[]> => {
     }
 
     const duration = status.durationMillis || 2000;
-    const samples = Math.floor(duration / 50); // Una muestra cada 50ms
+    const samples = Math.floor(duration / 50);
     const audioData: number[] = [];
     
-    // Simular análisis de amplitud
-    // En una implementación real, usarías FFT o Web Audio API
     for (let i = 0; i < samples; i++) {
       const time = (i / samples) * duration;
-      // Simular patrones de amplitud más realistas
       const baseAmplitude = Math.sin((time / duration) * Math.PI * 4) * 50 + 50;
       const noise = (Math.random() - 0.5) * 30;
       const amplitude = Math.max(0, Math.min(100, baseAmplitude + noise));
@@ -152,7 +147,6 @@ const analyzeAudio = async (uri: string): Promise<number[]> => {
     return audioData;
   } catch (error) {
     console.error('Error analyzing audio:', error);
-    // Retornar datos dummy en caso de error
     return Array.from({ length: 40 }, () => Math.random() * 100);
   }
 };

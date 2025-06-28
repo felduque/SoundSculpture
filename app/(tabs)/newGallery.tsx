@@ -2,6 +2,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import Icon from "@/components/ui/IconLucide";
 import { shapesFilter, shapeTypes } from "@/constants/shapes";
 import { useSculptureData } from "@/hooks/useSculptureData";
+import { useTranslation } from "@/hooks/useTranslation";
 import { Sculpture, ShapeType, ShapeTypeConfig } from "@/types";
 import * as MediaLibrary from "expo-media-library";
 import { useCallback, useRef, useState } from "react";
@@ -20,69 +21,55 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const { width } = Dimensions.get("window");
-const CARD_WIDTH = (width - 48) / 2; // 2 columnas con padding
+const CARD_WIDTH = (width - 48) / 2;
+
 export default function NewGallery() {
+  const { t } = useTranslation();
   const [shapeType, setShapeType] = useState<ShapeType>("all");
   const { data, loading, filteredSculpture } = useSculptureData();
   const viewShotRef = useRef(null);
+
   const handleShape = (e: ShapeType) => {
     setShapeType(e);
   };
 
   const handleCaptureAndSave = useCallback(async () => {
     try {
-      // 1. Verificar permisos
       const { status } = await MediaLibrary.requestPermissionsAsync();
       if (status !== "granted") {
         Alert.alert(
-          "Permiso denegado",
-          "Necesitas dar permiso para guardar en la galería"
+          "Permission denied",
+          "You need to grant permission to save to gallery"
         );
         return;
       }
 
-      // 2. Capturar la vista
       const uri = await viewShotRef.current.capture();
-      console.log("Imagen capturada en:", uri);
+      console.log("Image captured at:", uri);
 
-      // 3. Guardar en la galería
       const asset = await MediaLibrary.createAssetAsync(uri);
       await MediaLibrary.createAlbumAsync("SoundSculpture", asset, false);
 
-      Alert.alert("¡Éxito!", "La captura se guardó en tu galería");
+      Alert.alert("Success!", "The capture was saved to your gallery");
     } catch (error) {
-      console.error("Error al guardar:", error);
-      Alert.alert("Error", "No se pudo guardar la captura");
+      console.error("Error saving:", error);
+      Alert.alert("Error", "Could not save the capture");
     }
   }, []);
 
-
   const handleSearch = useCallback(
     async (shape: ShapeType) => {
-      handleShape(shape)
+      handleShape(shape);
       await filteredSculpture({ for: "all", shape: shape });
     },
     [filteredSculpture]
   );
 
-  const renderGalleryItem: ListRenderItem<Sculpture> = ({
-    item,
-    index,
-  }: {
-    item: Sculpture;
-    index: number;
-  }) => {
-    // Simplified animation or remove it for FlatList
-    const shape = shapeTypes.find(
-      (e) => e.id === item.shapeType
-    ) as ShapeTypeConfig;
+  const renderGalleryItem: ListRenderItem<Sculpture> = ({ item, index }) => {
+    const shape = shapeTypes.find((e) => e.id === item.shapeType) as ShapeTypeConfig;
+    
     return (
-      <View
-        style={{
-          width: CARD_WIDTH, 
-          marginBottom: 20,
-        }}
-      >
+      <View style={{ width: CARD_WIDTH, marginBottom: 20 }}>
         <TouchableOpacity
           activeOpacity={0.95}
           className="bg-white dark:bg-neutral-900 rounded-3xl overflow-hidden"
@@ -94,40 +81,33 @@ export default function NewGallery() {
             elevation: 12,
           }}
         >
-          {/* Imagen con overlay gradient */}
           <View className="relative">
             <Image
               source={{ uri: "https://picsum.photos/200/200?random=1" }}
               className="w-full h-40"
               resizeMode="cover"
             />
-            {/* Gradient overlay */}
             <View
               className="absolute inset-0"
-              style={{
-                backgroundColor: "rgba(0,0,0,0.3)",
-              }}
+              style={{ backgroundColor: "rgba(0,0,0,0.3)" }}
             />
-            {/* Heart icon */}
             <TouchableOpacity
               className="top-3 right-3 absolute bg-white p-2 rounded-full"
               style={{ backgroundColor: "rgba(255,255,255,0.3)" }}
             >
               <Icon name="Heart" size={16} color="#ffffff" />
             </TouchableOpacity>
-            {/* Likes counter */}
             <View
               className="bottom-3 left-3 absolute flex-row items-center gap-1 px-2 py-1 rounded-full"
               style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
             >
               <Icon name={shape?.icon} size={12} color="#fff" />
               <Text className="font-medium text-white text-xs">
-                {shape?.name}
+                {t.recording.shapes[shape?.id]}
               </Text>
             </View>
           </View>
 
-          {/* Content */}
           <View className="p-4">
             <Text className="mb-1 font-bold text-base text-neutral-800 dark:text-neutral-100">
               {item.name}
@@ -136,7 +116,6 @@ export default function NewGallery() {
               {shape?.description}
             </Text>
 
-            {/* Bottom row */}
             <View className="flex-row justify-between items-center">
               <Text className="text-neutral-400 text-xs dark:text-neutral-500">
                 {item.createdAt}
@@ -162,21 +141,22 @@ export default function NewGallery() {
           <Icon name="GalleryThumbnails" size={28} color="#ffffff" />
         </View>
         <Text className="ml-4 font-bold text-2xl text-neutral-800 dark:text-neutral-100">
-          Tu Galería
+          {t.gallery.title}
         </Text>
         <ThemeToggle />
       </View>
+
       {/* Filter Section */}
       <View className="bg-neutral-50 dark:bg-neutral-900 py-4">
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{
-            paddingHorizontal: 16,
-          }}
+          contentContainerStyle={{ paddingHorizontal: 16 }}
         >
           {shapesFilter.map((item) => {
             const isSelected = item.id === shapeType;
+            const displayName = item.id === "all" ? t.gallery.filters.all : t.recording.shapes[item.id];
+            
             return (
               <TouchableOpacity
                 key={item.id}
@@ -204,7 +184,7 @@ export default function NewGallery() {
                       : "text-neutral-700 dark:text-neutral-300"
                   }`}
                 >
-                  {item.name}
+                  {displayName}
                 </Text>
               </TouchableOpacity>
             );
@@ -220,16 +200,15 @@ export default function NewGallery() {
               {data.length}
             </Text>
             <Text className="text-neutral-500 text-sm dark:text-neutral-400">
-              Esculturas
+              {t.gallery.stats.sculptures}
             </Text>
           </View>
           <View className="items-center">
             <Text className="font-bold text-purple-600 text-xl dark:text-purple-400">
-              {/* {Math.floor(mockData.reduce((acc, item) => acc + item.likes, 0) / mockData.length)} */}
               23
             </Text>
             <Text className="text-neutral-500 text-sm dark:text-neutral-400">
-              Promedio ❤️
+              {t.gallery.stats.average}
             </Text>
           </View>
           <View className="items-center">
@@ -237,7 +216,7 @@ export default function NewGallery() {
               {shapeTypes.length}
             </Text>
             <Text className="text-neutral-500 text-sm dark:text-neutral-400">
-              Categorías
+              {t.gallery.stats.categories}
             </Text>
           </View>
         </View>
@@ -245,37 +224,31 @@ export default function NewGallery() {
     </View>
   );
 
-
   return (
     <SafeAreaView className="flex-1 bg-neutral-50 dark:bg-neutral-950">
       <StatusBar barStyle="dark-content" backgroundColor="#fafafa" />
 
       <View className="flex-1">
         {headerComponent()}
-        {/* <ViewShot options={{ format: "jpg", quality: 0.9 }} ref={viewShotRef}> */}
-          <FlatList
-            data={data}
-            renderItem={renderGalleryItem}
-            keyExtractor={(item) => item.id.toString()}
-            numColumns={2}
-            contentContainerStyle={{
-              paddingHorizontal: 16,
-              paddingTop: 16,
-              paddingBottom: 100,
-            }}
-            columnWrapperStyle={{
-              justifyContent: "space-between",
-            }}
-            showsVerticalScrollIndicator={false}
-            removeClippedSubviews={true}
-            maxToRenderPerBatch={10}
-            windowSize={10}
-            initialNumToRender={8}
-          />
-        {/* </ViewShot> */}
+        <FlatList
+          data={data}
+          renderItem={renderGalleryItem}
+          keyExtractor={(item) => item.id.toString()}
+          numColumns={2}
+          contentContainerStyle={{
+            paddingHorizontal: 16,
+            paddingTop: 16,
+            paddingBottom: 100,
+          }}
+          columnWrapperStyle={{ justifyContent: "space-between" }}
+          showsVerticalScrollIndicator={false}
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={10}
+          windowSize={10}
+          initialNumToRender={8}
+        />
       </View>
 
-      {/* Floating Action Button */}
       <TouchableOpacity
         onPress={handleCaptureAndSave}
         className="right-6 bottom-6 absolute shadow-lg p-4 rounded-full"

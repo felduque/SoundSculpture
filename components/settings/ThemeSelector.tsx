@@ -1,4 +1,5 @@
 import { Theme, useTheme } from '@/store/themeStore';
+import { useTranslation } from '@/hooks/useTranslation';
 import { Moon, Sun } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
 import React from 'react';
@@ -6,24 +7,20 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export function ThemeSelector() {
   const { theme, isDark, setTheme } = useTheme();
-  const {colorScheme, setColorScheme} = useColorScheme()
+  const {colorScheme, setColorScheme} = useColorScheme();
+  const { t } = useTranslation();
 
   const themes: { key: Theme; label: string; icon: React.ReactNode }[] = [
     {
       key: 'light',
-      label: 'Light',
+      label: t.settings.appearance.light,
       icon: <Sun size={20} color={colorScheme === "dark" ? '#f8fafc' : '#0f172a'} />,
     },
     {
       key: 'dark',
-      label: 'Dark',
+      label: t.settings.appearance.dark,
       icon: <Moon size={20} color={colorScheme === "dark" ? '#f8fafc' : '#0f172a'} />,
     },
-    // { 
-    //   key: 'system',
-    //   label: 'System',
-    //   icon: <Smartphone size={20} color={isDark ? '#f8fafc' : '#0f172a'} />,
-    // },
   ];
 
   return (
@@ -32,7 +29,7 @@ export function ThemeSelector() {
         styles.title,
         { color: colorScheme === "dark" ? '#f8fafc' : '#0f172a' }
       ]}>
-        Appearance
+        {t.settings.appearance.theme}
       </Text>
       <View style={styles.optionsContainer}>
         {themes.map((themeOption) => (

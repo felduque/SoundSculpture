@@ -1,8 +1,10 @@
 import { SettingsItem } from "@/components/settings/SettingsItem";
 import { SettingsSection } from "@/components/settings/SettingsSection";
 import { ThemeSelector } from "@/components/settings/ThemeSelector";
+import { LanguageSelector } from "@/components/settings/LanguageSelector";
 import Icon from "@/components/ui/IconLucide";
 import { useSettingsStore } from "@/store/settingsStore";
+import { useTranslation } from "@/hooks/useTranslation";
 import { useColorScheme } from "nativewind";
 import React from "react";
 import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -10,6 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function SettingsScreen() {
   const { colorScheme } = useColorScheme();
+  const { t } = useTranslation();
 
   const {
     notifications,
@@ -23,12 +26,12 @@ export default function SettingsScreen() {
 
   const handleResetSettings = () => {
     Alert.alert(
-      "Reset Settings",
-      "Are you sure you want to reset all settings to their default values?",
+      t.settings.alerts.resetTitle,
+      t.settings.alerts.resetMessage,
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t.common.cancel, style: "cancel" },
         {
-          text: "Reset",
+          text: t.settings.alerts.resetConfirm,
           style: "destructive",
           onPress: resetToDefaults,
         },
@@ -37,16 +40,20 @@ export default function SettingsScreen() {
   };
 
   const handleLogout = () => {
-    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Sign Out",
-        style: "destructive",
-        onPress: () => {
-          console.log("User logged out");
+    Alert.alert(
+      t.settings.alerts.signOutTitle, 
+      t.settings.alerts.signOutMessage, 
+      [
+        { text: t.common.cancel, style: "cancel" },
+        {
+          text: t.settings.alerts.signOutConfirm,
+          style: "destructive",
+          onPress: () => {
+            console.log("User logged out");
+          },
         },
-      },
-    ]);
+      ]
+    );
   };
 
   return (
@@ -55,26 +62,31 @@ export default function SettingsScreen() {
         {/* Header */}
         <View className="px-4 py-6">
           <Text className="font-bold text-3xl text-text-primary-light dark:text-text-primary-dark">
-            Settings
+            {t.settings.title}
           </Text>
           <Text
             className="text-text-secondary-light dark:text-text-secondary-dark"
             style={[styles.subtitle]}
           >
-            Customize your app experience
+            {t.settings.subtitle}
           </Text>
         </View>
 
         {/* Theme Section */}
-        <SettingsSection title="Appearance">
+        <SettingsSection title={t.settings.sections.appearance}>
           <ThemeSelector />
         </SettingsSection>
 
+        {/* Language Section */}
+        <SettingsSection title={t.settings.app.language}>
+          <LanguageSelector />
+        </SettingsSection>
+
         {/* Notifications */}
-        <SettingsSection title="Notifications">
+        <SettingsSection title={t.settings.sections.notifications}>
           <SettingsItem
-            title="Push Notifications"
-            description="Receive notifications on your device"
+            title={t.settings.notifications.push}
+            description={t.settings.notifications.pushDesc}
             icon={
               <Icon
                 name="Bell"
@@ -88,8 +100,8 @@ export default function SettingsScreen() {
             }
           />
           <SettingsItem
-            title="Email Notifications"
-            description="Receive updates via email"
+            title={t.settings.notifications.email}
+            description={t.settings.notifications.emailDesc}
             icon={
               <Icon
                 name="Mail"
@@ -103,8 +115,8 @@ export default function SettingsScreen() {
             }
           />
           <SettingsItem
-            title="Sound Alerts"
-            description="Play sounds for notifications"
+            title={t.settings.notifications.sound}
+            description={t.settings.notifications.soundDesc}
             icon={
               <Icon
                 name="Volume2"
@@ -118,8 +130,8 @@ export default function SettingsScreen() {
             }
           />
           <SettingsItem
-            title="Vibration"
-            description="Vibrate for notifications"
+            title={t.settings.notifications.vibration}
+            description={t.settings.notifications.vibrationDesc}
             icon={
               <Icon
                 name="Vibrate"
@@ -134,10 +146,10 @@ export default function SettingsScreen() {
         </SettingsSection>
 
         {/* Privacy & Security */}
-        <SettingsSection title="Privacy & Security">
+        <SettingsSection title={t.settings.sections.privacy}>
           <SettingsItem
-            title="Analytics"
-            description="Help improve the app with usage data"
+            title={t.settings.privacy.analytics}
+            description={t.settings.privacy.analyticsDesc}
             icon={
               <Icon
                 name="ChartColumnBig"
@@ -149,8 +161,8 @@ export default function SettingsScreen() {
             onToggle={(value) => updatePrivacySetting("analytics", value)}
           />
           <SettingsItem
-            title="Crash Reporting"
-            description="Send crash reports to help fix bugs"
+            title={t.settings.privacy.crashReporting}
+            description={t.settings.privacy.crashReportingDesc}
             icon={
               <Icon
                 name="Shield"
@@ -162,8 +174,8 @@ export default function SettingsScreen() {
             onToggle={(value) => updatePrivacySetting("crashReporting", value)}
           />
           <SettingsItem
-            title="Personalized Ads"
-            description="Show ads based on your interests"
+            title={t.settings.privacy.personalizedAds}
+            description={t.settings.privacy.personalizedAdsDesc}
             icon={
               <Icon
                 name="Eye"
@@ -178,10 +190,10 @@ export default function SettingsScreen() {
         </SettingsSection>
 
         {/* App Settings */}
-        <SettingsSection title="App Settings">
+        <SettingsSection title={t.settings.sections.app}>
           <SettingsItem
-            title="Auto Save"
-            description="Automatically save your work"
+            title={t.settings.app.autoSave}
+            description={t.settings.app.autoSaveDesc}
             icon={
               <Icon
                 name="Save"
@@ -193,8 +205,8 @@ export default function SettingsScreen() {
             onToggle={(value) => updateAppSetting("autoSave", value)}
           />
           <SettingsItem
-            title="High Quality Audio"
-            description="Use higher quality audio processing"
+            title={t.settings.app.highQualityAudio}
+            description={t.settings.app.highQualityAudioDesc}
             icon={
               <Icon
                 name="Music"
@@ -206,8 +218,8 @@ export default function SettingsScreen() {
             onToggle={(value) => updateAppSetting("highQualityAudio", value)}
           />
           <SettingsItem
-            title="Offline Mode"
-            description="Enable offline functionality"
+            title={t.settings.app.offlineMode}
+            description={t.settings.app.offlineModeDesc}
             icon={
               <Icon
                 name="Wifi"
@@ -217,30 +229,15 @@ export default function SettingsScreen() {
             }
             value={app.offlineMode}
             onToggle={(value) => updateAppSetting("offlineMode", value)}
-          />
-          <SettingsItem
-            title="Language"
-            description="English"
-            icon={
-              <Icon
-                name="Globe"
-                size={20}
-                color={colorScheme === "dark" ? "#a78bfa" : "#8b5cf6"}
-              />
-            }
-            showChevron
-            onPress={() => {
-              Alert.alert("Language", "Language selection coming soon!");
-            }}
             isLast
           />
         </SettingsSection>
 
         {/* Support */}
-        <SettingsSection title="Support">
+        <SettingsSection title={t.settings.sections.support}>
           <SettingsItem
-            title="Help Center"
-            description="Get help and find answers"
+            title={t.settings.support.helpCenter}
+            description={t.settings.support.helpCenterDesc}
             icon={
               <Icon
                 name="BadgeQuestionMark"
@@ -250,12 +247,12 @@ export default function SettingsScreen() {
             }
             showChevron
             onPress={() => {
-              Alert.alert("Help Center", "Opening help center...");
+              Alert.alert(t.settings.alerts.helpCenterTitle, t.settings.alerts.helpCenterMessage);
             }}
           />
           <SettingsItem
-            title="Contact Support"
-            description="Get in touch with our team"
+            title={t.settings.support.contactSupport}
+            description={t.settings.support.contactSupportDesc}
             icon={
               <Icon
                 name="MessageCircleQuestionMark"
@@ -265,12 +262,12 @@ export default function SettingsScreen() {
             }
             showChevron
             onPress={() => {
-              Alert.alert("Contact Support", "Opening contact form...");
+              Alert.alert(t.settings.alerts.contactSupportTitle, t.settings.alerts.contactSupportMessage);
             }}
           />
           <SettingsItem
-            title="Rate App"
-            description="Rate us on the App Store"
+            title={t.settings.support.rateApp}
+            description={t.settings.support.rateAppDesc}
             icon={
               <Icon
                 name="Star"
@@ -280,17 +277,17 @@ export default function SettingsScreen() {
             }
             showChevron
             onPress={() => {
-              Alert.alert("Rate App", "Thank you for your feedback!");
+              Alert.alert(t.settings.alerts.rateAppTitle, t.settings.alerts.rateAppMessage);
             }}
             isLast
           />
         </SettingsSection>
 
         {/* Account Actions */}
-        <SettingsSection title="Account">
+        <SettingsSection title={t.settings.sections.account}>
           <SettingsItem
-            title="Sign Out"
-            description="Sign out of your account"
+            title={t.settings.account.signOut}
+            description={t.settings.account.signOutDesc}
             icon={
               <Icon
                 name="LogOut"
@@ -301,8 +298,8 @@ export default function SettingsScreen() {
             onPress={handleLogout}
           />
           <SettingsItem
-            title="Reset Settings"
-            description="Reset all settings to default"
+            title={t.settings.account.resetSettings}
+            description={t.settings.account.resetSettingsDesc}
             icon={
               <Icon
                 name="Trash2"
@@ -323,7 +320,7 @@ export default function SettingsScreen() {
               { color: colorScheme === "dark" ? "#94a3b8" : "#64748b" },
             ]}
           >
-            Sound Sculpture v1.0.0
+            {t.settings.footer.version}
           </Text>
           <Text
             style={[
@@ -331,7 +328,7 @@ export default function SettingsScreen() {
               { color: colorScheme === "dark" ? "#94a3b8" : "#64748b" },
             ]}
           >
-            Made with ❤️ for music lovers
+            {t.settings.footer.subtitle}
           </Text>
         </View>
       </ScrollView>
