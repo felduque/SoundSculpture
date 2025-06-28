@@ -4,9 +4,9 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
   Animated,
   Alert,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -19,13 +19,12 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { Audio } from 'expo-av';
 import type { Sculpture } from '@/types';
 
-const { width, height } = Dimensions.get('window');
-
 export function SculptureViewer() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = useTranslation();
   const { data, updateSculpture } = useSculptureData();
+  const { width, height } = useWindowDimensions();
   
   const [sculpture, setSculpture] = useState<Sculpture | null>(null);
   const [showColorPicker, setShowColorPicker] = useState(false);

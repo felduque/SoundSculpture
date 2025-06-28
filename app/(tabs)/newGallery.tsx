@@ -25,17 +25,17 @@ const CARD_WIDTH = (width - 48) / 2;
 export default function NewGallery() {
   const router = useRouter();
   const { t } = useTranslation();
-  const [shapeType, setShapeType] = useState<ShapeType>("all");
+  const [shapeType, setShapeType] = useState<ShapeType | "all">("all");
   const [selectedSculpture, setSelectedSculpture] = useState<Sculpture | null>(null);
   const [showExportModal, setShowExportModal] = useState(false);
   const { data, loading, filteredSculpture } = useSculptureData();
 
-  const handleShape = (e: ShapeType) => {
+  const handleShape = (e: ShapeType | "all") => {
     setShapeType(e);
   };
 
   const handleSearch = useCallback(
-    async (shape: ShapeType) => {
+    async (shape: ShapeType | "all") => {
       handleShape(shape);
       await filteredSculpture({ for: "all", shape: shape });
     },
@@ -102,7 +102,7 @@ export default function NewGallery() {
             >
               <Icon name={shape?.icon} size={12} color="#fff" />
               <Text className="font-medium text-white text-xs">
-                {t.recording.shapes[shape?.id]}
+                {shape ? t.recording.shapes[shape.id] : item.shapeType}
               </Text>
             </View>
 
