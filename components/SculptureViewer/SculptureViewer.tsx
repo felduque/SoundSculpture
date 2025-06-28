@@ -31,6 +31,7 @@ export function SculptureViewer() {
   const [showExportModal, setShowExportModal] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [sound, setSound] = useState<Audio.Sound | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
   
   const rotationAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -120,14 +121,19 @@ export function SculptureViewer() {
   const handleColorChange = async (newColor: string) => {
     if (!sculpture) return;
 
-    const updatedSculpture = { ...sculpture, color: newColor };
-    setSculpture(updatedSculpture);
-    
+    setIsUpdating(true);
     try {
+      const updatedSculpture = { ...sculpture, color: newColor };
+      setSculpture(updatedSculpture);
       await updateSculpture(updatedSculpture);
       Alert.alert('Success', 'Sculpture color updated!');
     } catch (error) {
+      console.error('Error updating color:', error);
       Alert.alert(t.common.error, 'Failed to update sculpture color');
+      // Revert the color change on error
+      setSculpture(sculpture);
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -167,6 +173,7 @@ export function SculptureViewer() {
           <TouchableOpacity
             onPress={() => setShowColorPicker(true)}
             style={[styles.actionButton, { backgroundColor: sculpture.color }]}
+            disabled={isUpdating}
           >
             <Palette size={20} color="#fff" />
           </TouchableOpacity>
@@ -202,6 +209,9 @@ export function SculptureViewer() {
             <Text style={styles.infoTitle}>{sculpture.shapeType.toUpperCase()}</Text>
             <Text style={styles.infoDetail}>Created: {sculpture.createdAt}</Text>
             <View style={[styles.colorIndicator, { backgroundColor: sculpture.color }]} />
+            {isUpdating && (
+              <Text style={styles.updatingText}>Updating...</Text>
+            )}
           </View>
         </View>
       </View>
@@ -338,6 +348,12 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     alignSelf: 'flex-start',
+  },
+  updatingText: {
+    color: '#fbbf24',
+    fontSize: 12,
+    marginTop: 4,
+    fontStyle: 'italic',
   },
   controls: {
     flexDirection: 'row',

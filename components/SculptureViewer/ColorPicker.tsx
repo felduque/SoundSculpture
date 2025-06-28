@@ -8,9 +8,12 @@ import {
   TextInput,
   Alert,
   Modal,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { X, Check, Palette } from 'lucide-react-native';
+import { X, Check, Palette, Sparkles } from 'lucide-react-native';
+
+const { width: screenWidth } = Dimensions.get('window');
 
 interface Props {
   visible: boolean;
@@ -31,10 +34,26 @@ const PRESET_COLORS = [
 ];
 
 const COLOR_CATEGORIES = [
-  { name: 'Warm', colors: ['#FF6B6B', '#FF8A80', '#FFAB91', '#FF5722', '#FF9800', '#E91E63'] },
-  { name: 'Cool', colors: ['#4ECDC4', '#45B7D1', '#80CBC4', '#009688', '#2196F3', '#00BCD4'] },
-  { name: 'Nature', colors: ['#96CEB4', '#A5D6A7', '#4CAF50', '#8BC34A', '#CDDC39', '#00E676'] },
-  { name: 'Vibrant', colors: ['#DDA0DD', '#CE93D8', '#9C27B0', '#673AB7', '#3F51B5', '#B39DDB'] },
+  { 
+    name: 'Warm', 
+    colors: ['#FF6B6B', '#FF8A80', '#FFAB91', '#FF5722', '#FF9800', '#E91E63'],
+    icon: '🔥'
+  },
+  { 
+    name: 'Cool', 
+    colors: ['#4ECDC4', '#45B7D1', '#80CBC4', '#009688', '#2196F3', '#00BCD4'],
+    icon: '❄️'
+  },
+  { 
+    name: 'Nature', 
+    colors: ['#96CEB4', '#A5D6A7', '#4CAF50', '#8BC34A', '#CDDC39', '#00E676'],
+    icon: '🌿'
+  },
+  { 
+    name: 'Vibrant', 
+    colors: ['#DDA0DD', '#CE93D8', '#9C27B0', '#673AB7', '#3F51B5', '#B39DDB'],
+    icon: '✨'
+  },
 ];
 
 export function ColorPicker({ visible, currentColor, onColorSelect, onClose }: Props) {
@@ -49,12 +68,10 @@ export function ColorPicker({ visible, currentColor, onColorSelect, onClose }: P
   const handleCustomColorSubmit = () => {
     let color = customColor.trim();
     
-    // Add # if not present
     if (color && !color.startsWith('#')) {
       color = `#${color}`;
     }
     
-    // Validate hex color
     const hexRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
     if (hexRegex.test(color)) {
       setSelectedColor(color);
@@ -77,6 +94,36 @@ export function ColorPicker({ visible, currentColor, onColorSelect, onClose }: P
     return category ? category.colors : PRESET_COLORS;
   };
 
+  const generateColorHarmonies = (baseColor: string) => {
+    const hsl = hexToHsl(baseColor);
+    
+    return [
+      {
+        name: 'Analogous',
+        colors: [
+          hslToHex((hsl.h - 30 + 360) % 360, hsl.s, hsl.l),
+          baseColor,
+          hslToHex((hsl.h + 30) % 360, hsl.s, hsl.l),
+        ]
+      },
+      {
+        name: 'Complementary',
+        colors: [
+          baseColor,
+          hslToHex((hsl.h + 180) % 360, hsl.s, hsl.l),
+        ]
+      },
+      {
+        name: 'Triadic',
+        colors: [
+          baseColor,
+          hslToHex((hsl.h + 120) % 360, hsl.s, hsl.l),
+          hslToHex((hsl.h + 240) % 360, hsl.s, hsl.l),
+        ]
+      },
+    ];
+  };
+
   return (
     <Modal
       visible={visible}
@@ -87,68 +134,77 @@ export function ColorPicker({ visible, currentColor, onColorSelect, onClose }: P
       <SafeAreaView style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+          <TouchableOpacity onPress={onClose} style={styles.headerButton}>
             <X size={24} color="#333" />
           </TouchableOpacity>
           <Text style={styles.title}>Choose Color</Text>
-          <TouchableOpacity onPress={handleApply} style={styles.applyButton}>
+          <TouchableOpacity onPress={handleApply} style={styles.headerButton}>
             <Check size={24} color="#3b82f6" />
           </TouchableOpacity>
         </View>
 
-        {/* Current Selection Preview */}
+        {/* Color Preview */}
         <View style={styles.previewSection}>
           <View style={styles.previewContainer}>
-            <View style={[styles.currentColorPreview, { backgroundColor: currentColor }]} />
+            <View style={[styles.colorPreview, { backgroundColor: currentColor }]} />
             <Text style={styles.previewLabel}>Current</Text>
           </View>
+          <View style={styles.arrowContainer}>
+            <Text style={styles.arrow}>→</Text>
+          </View>
           <View style={styles.previewContainer}>
-            <View style={[styles.selectedColorPreview, { backgroundColor: selectedColor }]} />
+            <View style={[styles.colorPreview, styles.selectedPreview, { backgroundColor: selectedColor }]} />
             <Text style={styles.previewLabel}>Selected</Text>
           </View>
         </View>
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {/* Category Tabs */}
-          <View style={styles.categoryTabs}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {['All', ...COLOR_CATEGORIES.map(cat => cat.name)].map((category) => (
-                <TouchableOpacity
-                  key={category}
-                  onPress={() => setActiveCategory(category)}
-                  style={[
-                    styles.categoryTab,
-                    activeCategory === category && styles.activeCategoryTab
-                  ]}
-                >
-                  <Text style={[
-                    styles.categoryTabText,
-                    activeCategory === category && styles.activeCategoryTabText
-                  ]}>
-                    {category}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+          <View style={styles.categorySection}>
+            <Text style={styles.sectionTitle}>Color Categories</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryTabs}>
+              {['All', ...COLOR_CATEGORIES.map(cat => cat.name)].map((category) => {
+                const categoryData = COLOR_CATEGORIES.find(cat => cat.name === category);
+                const isActive = activeCategory === category;
+                
+                return (
+                  <TouchableOpacity
+                    key={category}
+                    onPress={() => setActiveCategory(category)}
+                    style={[styles.categoryTab, isActive && styles.activeCategoryTab]}
+                  >
+                    {categoryData && (
+                      <Text style={styles.categoryIcon}>{categoryData.icon}</Text>
+                    )}
+                    <Text style={[styles.categoryTabText, isActive && styles.activeCategoryTabText]}>
+                      {category}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </ScrollView>
           </View>
 
           {/* Color Grid */}
-          <View style={styles.colorGrid}>
-            {getColorsToShow().map((color, index) => (
-              <TouchableOpacity
-                key={`${activeCategory}-${index}`}
-                onPress={() => handleColorSelect(color)}
-                style={[
-                  styles.colorOption,
-                  { backgroundColor: color },
-                  selectedColor === color && styles.selectedColorOption
-                ]}
-              >
-                {selectedColor === color && (
-                  <Check size={20} color="#fff" />
-                )}
-              </TouchableOpacity>
-            ))}
+          <View style={styles.colorSection}>
+            <Text style={styles.sectionTitle}>Select Color</Text>
+            <View style={styles.colorGrid}>
+              {getColorsToShow().map((color, index) => (
+                <TouchableOpacity
+                  key={`${activeCategory}-${index}`}
+                  onPress={() => handleColorSelect(color)}
+                  style={[
+                    styles.colorOption,
+                    { backgroundColor: color },
+                    selectedColor === color && styles.selectedColorOption
+                  ]}
+                >
+                  {selectedColor === color && (
+                    <Check size={20} color="#fff" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
 
           {/* Custom Color Input */}
@@ -172,10 +228,13 @@ export function ColorPicker({ visible, currentColor, onColorSelect, onClose }: P
             </View>
           </View>
 
-          {/* Color Harmony Suggestions */}
+          {/* Color Harmonies */}
           <View style={styles.harmonySection}>
-            <Text style={styles.sectionTitle}>Color Harmonies</Text>
-            <Text style={styles.sectionSubtitle}>Based on your current selection</Text>
+            <View style={styles.harmonySectionHeader}>
+              <Sparkles size={20} color="#8b5cf6" />
+              <Text style={styles.sectionTitle}>Color Harmonies</Text>
+            </View>
+            <Text style={styles.sectionSubtitle}>Based on your selection</Text>
             <View style={styles.harmonyGrid}>
               {generateColorHarmonies(selectedColor).map((harmony, index) => (
                 <View key={index} style={styles.harmonyGroup}>
@@ -194,49 +253,23 @@ export function ColorPicker({ visible, currentColor, onColorSelect, onClose }: P
             </View>
           </View>
         </ScrollView>
+
+        {/* Apply Button */}
+        <View style={styles.footer}>
+          <TouchableOpacity onPress={handleApply} style={styles.applyButton}>
+            <Check size={20} color="#fff" />
+            <Text style={styles.applyButtonText}>Apply Color</Text>
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
     </Modal>
   );
 }
 
-// Helper function to generate color harmonies
-function generateColorHarmonies(baseColor: string) {
-  // Convert hex to HSL for color manipulation
-  const hsl = hexToHsl(baseColor);
-  
-  return [
-    {
-      name: 'Analogous',
-      colors: [
-        hslToHex((hsl.h - 30 + 360) % 360, hsl.s, hsl.l),
-        baseColor,
-        hslToHex((hsl.h + 30) % 360, hsl.s, hsl.l),
-      ]
-    },
-    {
-      name: 'Complementary',
-      colors: [
-        baseColor,
-        hslToHex((hsl.h + 180) % 360, hsl.s, hsl.l),
-      ]
-    },
-    {
-      name: 'Triadic',
-      colors: [
-        baseColor,
-        hslToHex((hsl.h + 120) % 360, hsl.s, hsl.l),
-        hslToHex((hsl.h + 240) % 360, hsl.s, hsl.l),
-      ]
-    },
-  ];
-}
-
 // Color conversion utilities
 function hexToHsl(hex: string) {
-  // Remove # if present
   hex = hex.replace('#', '');
   
-  // Convert 3-digit hex to 6-digit
   if (hex.length === 3) {
     hex = hex.split('').map(char => char + char).join('');
   }
@@ -312,16 +345,15 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e5e5e5',
   },
-  closeButton: {
+  headerButton: {
     padding: 4,
+    width: 40,
+    alignItems: 'center',
   },
   title: {
     fontSize: 18,
     fontWeight: '600',
     color: '#333',
-  },
-  applyButton: {
-    padding: 4,
   },
   previewSection: {
     flexDirection: 'row',
@@ -329,13 +361,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 24,
     backgroundColor: '#f8f9fa',
-    gap: 40,
+    gap: 20,
   },
   previewContainer: {
     alignItems: 'center',
     gap: 8,
   },
-  currentColorPreview: {
+  colorPreview: {
     width: 60,
     height: 60,
     borderRadius: 30,
@@ -347,17 +379,18 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 4,
   },
-  selectedColorPreview: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    borderWidth: 3,
+  selectedPreview: {
     borderColor: '#3b82f6',
     shadowColor: '#3b82f6',
-    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
+  },
+  arrowContainer: {
+    paddingHorizontal: 10,
+  },
+  arrow: {
+    fontSize: 24,
+    color: '#666',
+    fontWeight: 'bold',
   },
   previewLabel: {
     fontSize: 12,
@@ -368,18 +401,38 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
   },
-  categoryTabs: {
+  categorySection: {
     marginVertical: 20,
   },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 16,
+  },
+  categoryTabs: {
+    flexDirection: 'row',
+  },
   categoryTab: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 8,
     marginRight: 12,
     borderRadius: 20,
     backgroundColor: '#f0f0f0',
+    gap: 6,
   },
   activeCategoryTab: {
     backgroundColor: '#3b82f6',
+  },
+  categoryIcon: {
+    fontSize: 16,
   },
   categoryTabText: {
     fontSize: 14,
@@ -389,16 +442,18 @@ const styles = StyleSheet.create({
   activeCategoryTabText: {
     color: '#fff',
   },
+  colorSection: {
+    marginBottom: 30,
+  },
   colorGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
-    marginBottom: 30,
   },
   colorOption: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: (screenWidth - 80) / 6,
+    height: (screenWidth - 80) / 6,
+    borderRadius: (screenWidth - 80) / 12,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -416,17 +471,6 @@ const styles = StyleSheet.create({
   },
   customColorSection: {
     marginBottom: 30,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 12,
-  },
-  sectionSubtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 16,
   },
   customColorInput: {
     flexDirection: 'row',
@@ -455,6 +499,12 @@ const styles = StyleSheet.create({
   harmonySection: {
     marginBottom: 30,
   },
+  harmonySectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
   harmonyGrid: {
     gap: 16,
   },
@@ -482,5 +532,24 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
+  },
+  footer: {
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e5e5',
+  },
+  applyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#3b82f6',
+    paddingVertical: 16,
+    borderRadius: 12,
+    gap: 8,
+  },
+  applyButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
