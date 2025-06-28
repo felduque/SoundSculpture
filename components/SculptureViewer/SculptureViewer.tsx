@@ -6,8 +6,6 @@ import {
   TouchableOpacity,
   Dimensions,
   Animated,
-  Modal,
-  ScrollView,
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -37,6 +35,7 @@ export function SculptureViewer() {
   
   const rotationAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const sculptureViewRef = useRef<View>(null);
 
   useEffect(() => {
     if (id) {
@@ -127,6 +126,7 @@ export function SculptureViewer() {
     
     try {
       await updateSculpture(updatedSculpture);
+      Alert.alert('Success', 'Sculpture color updated!');
     } catch (error) {
       Alert.alert(t.common.error, 'Failed to update sculpture color');
     }
@@ -183,6 +183,7 @@ export function SculptureViewer() {
       {/* Sculpture Visualization */}
       <View style={styles.visualizationContainer}>
         <Animated.View
+          ref={sculptureViewRef}
           style={[
             styles.sculptureWrapper,
             {
@@ -234,24 +235,19 @@ export function SculptureViewer() {
       </View>
 
       {/* Color Picker Modal */}
-      <Modal
+      <ColorPicker
         visible={showColorPicker}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowColorPicker(false)}
-      >
-        <ColorPicker
-          currentColor={sculpture.color}
-          onColorSelect={handleColorChange}
-          onClose={() => setShowColorPicker(false)}
-        />
-      </Modal>
+        currentColor={sculpture.color}
+        onColorSelect={handleColorChange}
+        onClose={() => setShowColorPicker(false)}
+      />
 
       {/* Export Modal */}
       <ExportModal
         visible={showExportModal}
         onClose={() => setShowExportModal(false)}
         sculpture={sculpture}
+        viewRef={sculptureViewRef}
       />
     </SafeAreaView>
   );

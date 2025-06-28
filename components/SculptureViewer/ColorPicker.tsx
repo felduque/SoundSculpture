@@ -7,11 +7,13 @@ import {
   ScrollView,
   TextInput,
   Alert,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { X, Check, Palette } from 'lucide-react-native';
 
 interface Props {
+  visible: boolean;
   currentColor: string;
   onColorSelect: (color: string) => void;
   onClose: () => void;
@@ -35,7 +37,7 @@ const COLOR_CATEGORIES = [
   { name: 'Vibrant', colors: ['#DDA0DD', '#CE93D8', '#9C27B0', '#673AB7', '#3F51B5', '#B39DDB'] },
 ];
 
-export function ColorPicker({ currentColor, onColorSelect, onClose }: Props) {
+export function ColorPicker({ visible, currentColor, onColorSelect, onClose }: Props) {
   const [selectedColor, setSelectedColor] = useState(currentColor);
   const [customColor, setCustomColor] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
@@ -45,7 +47,12 @@ export function ColorPicker({ currentColor, onColorSelect, onClose }: Props) {
   };
 
   const handleCustomColorSubmit = () => {
-    const color = customColor.startsWith('#') ? customColor : `#${customColor}`;
+    let color = customColor.trim();
+    
+    // Add # if not present
+    if (color && !color.startsWith('#')) {
+      color = `#${color}`;
+    }
     
     // Validate hex color
     const hexRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
@@ -53,7 +60,7 @@ export function ColorPicker({ currentColor, onColorSelect, onClose }: Props) {
       setSelectedColor(color);
       setCustomColor('');
     } else {
-      Alert.alert('Invalid Color', 'Please enter a valid hex color (e.g., #FF6B6B)');
+      Alert.alert('Invalid Color', 'Please enter a valid hex color (e.g., #FF6B6B or FF6B6B)');
     }
   };
 
@@ -71,116 +78,124 @@ export function ColorPicker({ currentColor, onColorSelect, onClose }: Props) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-          <X size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Choose Color</Text>
-        <TouchableOpacity onPress={handleApply} style={styles.applyButton}>
-          <Check size={24} color="#3b82f6" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Current Selection Preview */}
-      <View style={styles.previewSection}>
-        <View style={styles.previewContainer}>
-          <View style={[styles.currentColorPreview, { backgroundColor: currentColor }]} />
-          <Text style={styles.previewLabel}>Current</Text>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
+    >
+      <SafeAreaView style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <X size={24} color="#333" />
+          </TouchableOpacity>
+          <Text style={styles.title}>Choose Color</Text>
+          <TouchableOpacity onPress={handleApply} style={styles.applyButton}>
+            <Check size={24} color="#3b82f6" />
+          </TouchableOpacity>
         </View>
-        <View style={styles.previewContainer}>
-          <View style={[styles.selectedColorPreview, { backgroundColor: selectedColor }]} />
-          <Text style={styles.previewLabel}>Selected</Text>
-        </View>
-      </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Category Tabs */}
-        <View style={styles.categoryTabs}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {['All', ...COLOR_CATEGORIES.map(cat => cat.name)].map((category) => (
+        {/* Current Selection Preview */}
+        <View style={styles.previewSection}>
+          <View style={styles.previewContainer}>
+            <View style={[styles.currentColorPreview, { backgroundColor: currentColor }]} />
+            <Text style={styles.previewLabel}>Current</Text>
+          </View>
+          <View style={styles.previewContainer}>
+            <View style={[styles.selectedColorPreview, { backgroundColor: selectedColor }]} />
+            <Text style={styles.previewLabel}>Selected</Text>
+          </View>
+        </View>
+
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          {/* Category Tabs */}
+          <View style={styles.categoryTabs}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {['All', ...COLOR_CATEGORIES.map(cat => cat.name)].map((category) => (
+                <TouchableOpacity
+                  key={category}
+                  onPress={() => setActiveCategory(category)}
+                  style={[
+                    styles.categoryTab,
+                    activeCategory === category && styles.activeCategoryTab
+                  ]}
+                >
+                  <Text style={[
+                    styles.categoryTabText,
+                    activeCategory === category && styles.activeCategoryTabText
+                  ]}>
+                    {category}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+
+          {/* Color Grid */}
+          <View style={styles.colorGrid}>
+            {getColorsToShow().map((color, index) => (
               <TouchableOpacity
-                key={category}
-                onPress={() => setActiveCategory(category)}
+                key={`${activeCategory}-${index}`}
+                onPress={() => handleColorSelect(color)}
                 style={[
-                  styles.categoryTab,
-                  activeCategory === category && styles.activeCategoryTab
+                  styles.colorOption,
+                  { backgroundColor: color },
+                  selectedColor === color && styles.selectedColorOption
                 ]}
               >
-                <Text style={[
-                  styles.categoryTabText,
-                  activeCategory === category && styles.activeCategoryTabText
-                ]}>
-                  {category}
-                </Text>
+                {selectedColor === color && (
+                  <Check size={20} color="#fff" />
+                )}
               </TouchableOpacity>
             ))}
-          </ScrollView>
-        </View>
-
-        {/* Color Grid */}
-        <View style={styles.colorGrid}>
-          {getColorsToShow().map((color, index) => (
-            <TouchableOpacity
-              key={`${activeCategory}-${index}`}
-              onPress={() => handleColorSelect(color)}
-              style={[
-                styles.colorOption,
-                { backgroundColor: color },
-                selectedColor === color && styles.selectedColorOption
-              ]}
-            >
-              {selectedColor === color && (
-                <Check size={20} color="#fff" />
-              )}
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Custom Color Input */}
-        <View style={styles.customColorSection}>
-          <Text style={styles.sectionTitle}>Custom Color</Text>
-          <View style={styles.customColorInput}>
-            <Palette size={20} color="#666" />
-            <TextInput
-              style={styles.textInput}
-              placeholder="Enter hex color (e.g., FF6B6B)"
-              value={customColor}
-              onChangeText={setCustomColor}
-              onSubmitEditing={handleCustomColorSubmit}
-              autoCapitalize="characters"
-              maxLength={7}
-            />
-            <TouchableOpacity onPress={handleCustomColorSubmit} style={styles.addButton}>
-              <Text style={styles.addButtonText}>Add</Text>
-            </TouchableOpacity>
           </View>
-        </View>
 
-        {/* Color Harmony Suggestions */}
-        <View style={styles.harmonySection}>
-          <Text style={styles.sectionTitle}>Color Harmonies</Text>
-          <Text style={styles.sectionSubtitle}>Based on your current selection</Text>
-          <View style={styles.harmonyGrid}>
-            {generateColorHarmonies(selectedColor).map((harmony, index) => (
-              <View key={index} style={styles.harmonyGroup}>
-                <Text style={styles.harmonyLabel}>{harmony.name}</Text>
-                <View style={styles.harmonyColors}>
-                  {harmony.colors.map((color, colorIndex) => (
-                    <TouchableOpacity
-                      key={colorIndex}
-                      onPress={() => handleColorSelect(color)}
-                      style={[styles.harmonyColor, { backgroundColor: color }]}
-                    />
-                  ))}
+          {/* Custom Color Input */}
+          <View style={styles.customColorSection}>
+            <Text style={styles.sectionTitle}>Custom Color</Text>
+            <View style={styles.customColorInput}>
+              <Palette size={20} color="#666" />
+              <TextInput
+                style={styles.textInput}
+                placeholder="Enter hex color (e.g., FF6B6B)"
+                value={customColor}
+                onChangeText={setCustomColor}
+                onSubmitEditing={handleCustomColorSubmit}
+                autoCapitalize="characters"
+                maxLength={7}
+                placeholderTextColor="#999"
+              />
+              <TouchableOpacity onPress={handleCustomColorSubmit} style={styles.addButton}>
+                <Text style={styles.addButtonText}>Add</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Color Harmony Suggestions */}
+          <View style={styles.harmonySection}>
+            <Text style={styles.sectionTitle}>Color Harmonies</Text>
+            <Text style={styles.sectionSubtitle}>Based on your current selection</Text>
+            <View style={styles.harmonyGrid}>
+              {generateColorHarmonies(selectedColor).map((harmony, index) => (
+                <View key={index} style={styles.harmonyGroup}>
+                  <Text style={styles.harmonyLabel}>{harmony.name}</Text>
+                  <View style={styles.harmonyColors}>
+                    {harmony.colors.map((color, colorIndex) => (
+                      <TouchableOpacity
+                        key={colorIndex}
+                        onPress={() => handleColorSelect(color)}
+                        style={[styles.harmonyColor, { backgroundColor: color }]}
+                      />
+                    ))}
+                  </View>
                 </View>
-              </View>
-            ))}
+              ))}
+            </View>
           </View>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+        </ScrollView>
+      </SafeAreaView>
+    </Modal>
   );
 }
 
@@ -218,9 +233,17 @@ function generateColorHarmonies(baseColor: string) {
 
 // Color conversion utilities
 function hexToHsl(hex: string) {
-  const r = parseInt(hex.slice(1, 3), 16) / 255;
-  const g = parseInt(hex.slice(3, 5), 16) / 255;
-  const b = parseInt(hex.slice(5, 7), 16) / 255;
+  // Remove # if present
+  hex = hex.replace('#', '');
+  
+  // Convert 3-digit hex to 6-digit
+  if (hex.length === 3) {
+    hex = hex.split('').map(char => char + char).join('');
+  }
+  
+  const r = parseInt(hex.slice(0, 2), 16) / 255;
+  const g = parseInt(hex.slice(2, 4), 16) / 255;
+  const b = parseInt(hex.slice(4, 6), 16) / 255;
 
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);

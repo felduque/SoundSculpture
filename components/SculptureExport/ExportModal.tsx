@@ -19,6 +19,7 @@ interface ExportModalProps {
   visible: boolean;
   onClose: () => void;
   sculpture: Sculpture | null;
+  viewRef?: any;
 }
 
 const exportFormats = [
@@ -96,7 +97,7 @@ const exportFormats = [
   },
 ];
 
-export function ExportModal({ visible, onClose, sculpture }: ExportModalProps) {
+export function ExportModal({ visible, onClose, sculpture, viewRef }: ExportModalProps) {
   const { t } = useTranslation();
   const [selectedFormat, setSelectedFormat] = useState<string>('png');
   const [isExporting, setIsExporting] = useState(false);
@@ -113,41 +114,37 @@ export function ExportModal({ visible, onClose, sculpture }: ExportModalProps) {
       const format = exportFormats.find(f => f.id === selectedFormat);
       if (!format) throw new Error('Invalid format');
 
-      let result;
       switch (selectedFormat) {
         case 'png':
-          result = await SculptureExporter.exportAsPNG(sculpture);
+          await SculptureExporter.exportAsPNG(sculpture, viewRef);
           break;
         case 'gif':
-          result = await SculptureExporter.exportAsGIF(sculpture);
+          await SculptureExporter.exportAsGIF(sculpture);
           break;
         case 'mp4':
-          result = await SculptureExporter.exportAsMP4(sculpture);
+          await SculptureExporter.exportAsMP4(sculpture);
           break;
         case 'obj':
-          result = await SculptureExporter.exportAsOBJ(sculpture);
+          await SculptureExporter.exportAsOBJ(sculpture);
           break;
         case 'stl':
-          result = await SculptureExporter.exportAsSTL(sculpture);
+          await SculptureExporter.exportAsSTL(sculpture);
           break;
         case 'svg':
-          result = await SculptureExporter.exportAsSVG(sculpture);
+          await SculptureExporter.exportAsSVG(sculpture);
           break;
         case 'json':
-          result = await SculptureExporter.exportAsJSON(sculpture);
+          await SculptureExporter.exportAsJSON(sculpture);
           break;
         case 'audio':
-          result = await SculptureExporter.exportAudio(sculpture);
+          await SculptureExporter.exportAudio(sculpture);
           break;
         default:
           throw new Error('Unsupported format');
       }
 
-      Alert.alert(
-        'Export Successful',
-        `Your sculpture has been exported as ${format.name}.${Platform.OS === 'web' ? ' The file has been downloaded.' : ' Check your gallery or files app.'}`,
-        [{ text: 'OK', onPress: onClose }]
-      );
+      // Success message is handled by the exporter
+      onClose();
     } catch (error) {
       console.error('Export error:', error);
       Alert.alert(

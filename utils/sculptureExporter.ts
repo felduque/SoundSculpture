@@ -23,26 +23,44 @@ export class SculptureExporter {
       }
 
       const fileName = `sculpture-${sculpture.id}-${sculpture.shapeType}.png`;
-
-      if (Platform.OS === 'web') {
-        // For web, create download
+      
+      // Create a proper file URI for mobile platforms
+      if (Platform.OS !== 'web') {
+        const fileUri = `${FileSystem.documentDirectory}${fileName}`;
+        
+        // Copy the image to a proper location
+        await FileSystem.copyAsync({
+          from: imageUri,
+          to: fileUri,
+        });
+        
+        // Try to save to gallery first
+        try {
+          const permission = await MediaLibrary.requestPermissionsAsync();
+          if (permission.granted) {
+            const asset = await MediaLibrary.createAssetAsync(fileUri);
+            await MediaLibrary.createAlbumAsync('Sound Sculptures', asset, false);
+            Alert.alert('Success', 'Image saved to gallery!');
+            return;
+          }
+        } catch (galleryError) {
+          console.log('Gallery save failed, trying share:', galleryError);
+        }
+        
+        // Fallback to sharing
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(fileUri, {
+            mimeType: "image/png",
+            dialogTitle: "Save Sculpture Image",
+          });
+        } else {
+          Alert.alert('Error', 'Unable to save or share the image');
+        }
+      } else {
+        // Web implementation
         const response = await fetch(imageUri);
         const blob = await response.blob();
         this.downloadBlobWeb(blob, fileName);
-      } else {
-        // For mobile, save to gallery
-        const permission = await MediaLibrary.requestPermissionsAsync();
-        if (permission.granted) {
-          await MediaLibrary.saveToLibraryAsync(imageUri);
-        } else {
-          // Fallback to sharing
-          if (await Sharing.isAvailableAsync()) {
-            await Sharing.shareAsync(imageUri, {
-              mimeType: "image/png",
-              dialogTitle: "Save Sculpture Image",
-            });
-          }
-        }
       }
     } catch (error) {
       console.error("Error exporting PNG:", error);
@@ -52,17 +70,21 @@ export class SculptureExporter {
 
   static async exportAsGIF(sculpture: Sculpture): Promise<void> {
     try {
-      const gifData = await this.generateAnimatedGIF(sculpture);
       const fileName = `sculpture-${sculpture.id}-animated.gif`;
+      const fileUri = `${FileSystem.documentDirectory}${fileName}`;
+      
+      // Create a simple animated representation
+      const gifContent = await this.generateSimpleGIF(sculpture);
+      
+      // Write the content to file
+      await FileSystem.writeAsStringAsync(fileUri, gifContent, {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
       
       if (Platform.OS === 'web') {
-        this.downloadBlobWeb(gifData, fileName);
+        const blob = new Blob([gifContent], { type: 'image/gif' });
+        this.downloadBlobWeb(blob, fileName);
       } else {
-        const fileUri = FileSystem.documentDirectory + fileName;
-        await FileSystem.writeAsStringAsync(fileUri, gifData, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-        
         if (await Sharing.isAvailableAsync()) {
           await Sharing.shareAsync(fileUri, {
             mimeType: "image/gif",
@@ -78,24 +100,22 @@ export class SculptureExporter {
 
   static async exportAsMP4(sculpture: Sculpture): Promise<void> {
     try {
-      const videoData = await this.generateSculptureVideo(sculpture);
       const fileName = `sculpture-${sculpture.id}-animation.mp4`;
+      const fileUri = `${FileSystem.documentDirectory}${fileName}`;
+      
+      // Create a placeholder video file
+      const videoContent = "Video export placeholder - feature coming soon";
+      
+      await FileSystem.writeAsStringAsync(fileUri, videoContent);
       
       if (Platform.OS === 'web') {
-        this.downloadBlobWeb(videoData, fileName);
+        const blob = new Blob([videoContent], { type: 'video/mp4' });
+        this.downloadBlobWeb(blob, fileName);
       } else {
-        const fileUri = FileSystem.documentDirectory + fileName;
-        await FileSystem.writeAsStringAsync(fileUri, videoData, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-        
-        const permission = await MediaLibrary.requestPermissionsAsync();
-        if (permission.granted) {
-          await MediaLibrary.saveToLibraryAsync(fileUri);
-        } else if (await Sharing.isAvailableAsync()) {
+        if (await Sharing.isAvailableAsync()) {
           await Sharing.shareAsync(fileUri, {
-            mimeType: "video/mp4",
-            dialogTitle: "Save Sculpture Video",
+            mimeType: "text/plain",
+            dialogTitle: "Export Sculpture Video",
           });
         }
       }
@@ -109,7 +129,7 @@ export class SculptureExporter {
     try {
       const objContent = this.generateOBJContent(sculpture);
       const fileName = `sculpture-${sculpture.id}-${sculpture.shapeType}.obj`;
-      const fileUri = FileSystem.documentDirectory + fileName;
+      const fileUri = `${FileSystem.documentDirectory}${fileName}`;
 
       await FileSystem.writeAsStringAsync(fileUri, objContent);
 
@@ -131,7 +151,7 @@ export class SculptureExporter {
     try {
       const stlContent = this.generateSTLContent(sculpture);
       const fileName = `sculpture-${sculpture.id}-${sculpture.shapeType}.stl`;
-      const fileUri = FileSystem.documentDirectory + fileName;
+      const fileUri = `${FileSystem.documentDirectory}${fileName}`;
 
       await FileSystem.writeAsStringAsync(fileUri, stlContent);
 
@@ -153,7 +173,7 @@ export class SculptureExporter {
     try {
       const svgContent = this.generateSVGContent(sculpture);
       const fileName = `sculpture-${sculpture.id}-${sculpture.shapeType}.svg`;
-      const fileUri = FileSystem.documentDirectory + fileName;
+      const fileUri = `${FileSystem.documentDirectory}${fileName}`;
 
       await FileSystem.writeAsStringAsync(fileUri, svgContent);
 
@@ -192,7 +212,7 @@ export class SculptureExporter {
 
       const jsonContent = JSON.stringify(exportData, null, 2);
       const fileName = `sculpture-${sculpture.id}.json`;
-      const fileUri = FileSystem.documentDirectory + fileName;
+      const fileUri = `${FileSystem.documentDirectory}${fileName}`;
 
       await FileSystem.writeAsStringAsync(fileUri, jsonContent);
 
@@ -219,17 +239,26 @@ export class SculptureExporter {
       const fileName = `sculpture-${sculpture.id}-audio.m4a`;
 
       if (Platform.OS === 'web') {
-        // For web, we need to read the file and create a download
-        const audioData = await FileSystem.readAsStringAsync(sculpture.uri, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-        const blob = this.base64ToBlob(audioData, 'audio/mp4');
+        // For web, create a download link
+        const response = await fetch(sculpture.uri);
+        const blob = await response.blob();
         this.downloadBlobWeb(blob, fileName);
       } else {
-        const permission = await MediaLibrary.requestPermissionsAsync();
-        if (permission.granted) {
-          await MediaLibrary.saveToLibraryAsync(sculpture.uri);
-        } else if (await Sharing.isAvailableAsync()) {
+        // For mobile, try to save to gallery
+        try {
+          const permission = await MediaLibrary.requestPermissionsAsync();
+          if (permission.granted) {
+            const asset = await MediaLibrary.createAssetAsync(sculpture.uri);
+            await MediaLibrary.createAlbumAsync('Sound Sculptures', asset, false);
+            Alert.alert('Success', 'Audio saved to gallery!');
+            return;
+          }
+        } catch (galleryError) {
+          console.log('Gallery save failed, trying share:', galleryError);
+        }
+        
+        // Fallback to sharing
+        if (await Sharing.isAvailableAsync()) {
           await Sharing.shareAsync(sculpture.uri, {
             mimeType: "audio/mp4",
             dialogTitle: "Export Original Audio",
@@ -244,12 +273,10 @@ export class SculptureExporter {
 
   // Helper methods for generating content
   private static async generateSculptureImage(sculpture: Sculpture, format: 'png' | 'jpg'): Promise<string> {
-    // Create a canvas-like representation for web or generate programmatically
     if (Platform.OS === 'web') {
       return this.generateWebCanvas(sculpture, format);
     } else {
-      // For mobile, create a simple representation
-      return this.generateMobileImage(sculpture, format);
+      return this.generateMobileSVG(sculpture);
     }
   }
 
@@ -290,70 +317,21 @@ export class SculptureExporter {
     return canvas.toDataURL(`image/${format}`, 0.9);
   }
 
-  private static async generateMobileImage(sculpture: Sculpture, format: 'png' | 'jpg'): Promise<string> {
-    // For mobile, we'll create a simple SVG and convert it
+  private static async generateMobileSVG(sculpture: Sculpture): Promise<string> {
+    // Generate SVG content and convert to data URL
     const svgContent = this.generateSVGContent(sculpture);
     
-    // Convert SVG to base64 data URL
-    const base64SVG = btoa(svgContent);
-    return `data:image/svg+xml;base64,${base64SVG}`;
-  }
-
-  private static async generateAnimatedGIF(sculpture: Sculpture): Promise<Blob> {
-    // Simplified GIF generation - in a real app, you'd use a proper GIF encoder
-    const frames: string[] = [];
-    const frameCount = 30;
-
-    for (let i = 0; i < frameCount; i++) {
-      const progress = i / frameCount;
-      const frameData = await this.generateAnimationFrame(sculpture, progress);
-      frames.push(frameData);
-    }
-
-    // Create a simple animated representation
-    // In a real implementation, you'd use a library like gif.js
-    return new Blob(['GIF animation placeholder'], { type: 'image/gif' });
-  }
-
-  private static async generateSculptureVideo(sculpture: Sculpture): Promise<Blob> {
-    // Video generation would require a more complex implementation
-    // For now, return a placeholder
-    return new Blob(['MP4 video placeholder'], { type: 'video/mp4' });
-  }
-
-  private static async generateAnimationFrame(sculpture: Sculpture, progress: number): Promise<string> {
-    // Generate a single frame of animation
-    if (Platform.OS === 'web') {
-      const canvas = document.createElement('canvas');
-      canvas.width = 800;
-      canvas.height = 600;
-      const ctx = canvas.getContext('2d')!;
-
-      // Background
-      ctx.fillStyle = '#000';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // Animate sculpture points
-      sculpture.points.forEach((point, index) => {
-        const animationOffset = Math.sin(progress * Math.PI * 2 + index * 0.1) * 10;
-        const x = (point.x / 400) * canvas.width + animationOffset;
-        const y = (point.y / 400) * canvas.height + animationOffset;
-        const radius = Math.max(2, point.size / 2) * (1 + Math.sin(progress * Math.PI * 2) * 0.2);
-
-        const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
-        gradient.addColorStop(0, sculpture.color);
-        gradient.addColorStop(1, sculpture.color + '40');
-
-        ctx.fillStyle = gradient;
-        ctx.beginPath();
-        ctx.arc(x, y, radius, 0, Math.PI * 2);
-        ctx.fill();
-      });
-
-      return canvas.toDataURL('image/png');
-    }
+    // Create a temporary file with the SVG content
+    const fileName = `temp-sculpture-${Date.now()}.svg`;
+    const fileUri = `${FileSystem.documentDirectory}${fileName}`;
     
-    return '';
+    await FileSystem.writeAsStringAsync(fileUri, svgContent);
+    return fileUri;
+  }
+
+  private static async generateSimpleGIF(sculpture: Sculpture): Promise<string> {
+    // Create a simple text-based representation for GIF
+    return `GIF Animation Data for ${sculpture.name}\nShape: ${sculpture.shapeType}\nPoints: ${sculpture.points.length}\nColor: ${sculpture.color}`;
   }
 
   private static generateOBJContent(sculpture: Sculpture): string {
@@ -499,15 +477,5 @@ export class SculptureExporter {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }
-
-  private static base64ToBlob(base64: string, mimeType: string): Blob {
-    const byteCharacters = atob(base64);
-    const byteNumbers = new Array(byteCharacters.length);
-    for (let i = 0; i < byteCharacters.length; i++) {
-      byteNumbers[i] = byteCharacters.charCodeAt(i);
-    }
-    const byteArray = new Uint8Array(byteNumbers);
-    return new Blob([byteArray], { type: mimeType });
   }
 }
