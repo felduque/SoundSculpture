@@ -1,4 +1,4 @@
-import { icons } from "lucide-react-native";
+import { Captions as icons } from "lucide-react-native";
 
 export interface Point3D {
   x: number;
