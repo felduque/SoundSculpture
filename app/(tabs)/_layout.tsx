@@ -52,6 +52,19 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: "Configuracions",
+          tabBarIcon: ({ color }) => (
+            <IconLucide
+              name="Settings"
+              size={28}
+              color={color}
+            />
+          ),
+        }}
+      />
     </Tabs>
   );
 }

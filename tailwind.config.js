@@ -104,6 +104,10 @@ module.exports = {
           light: "#8b5cf6",
           dark: "#a78bfa",
         },
+        green: {
+          light: "#10b981",
+          dark: "34d399"
+        },
         pink: {
           light: "#ec4899",
           dark: "#f472b6",
@@ -124,7 +128,9 @@ module.exports = {
           950: "#0a0a0a",
         },
       },
-
+      fontSize: {
+        primary: "13px"
+      },
       // Gradientes modernos
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
