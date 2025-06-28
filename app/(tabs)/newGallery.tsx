@@ -1,14 +1,11 @@
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { ExportModal } from "@/components/SculptureExport/ExportModal";
 import Icon from "@/components/ui/IconLucide";
 import { shapesFilter, shapeTypes } from "@/constants/shapes";
 import { useSculptureData } from "@/hooks/useSculptureData";
 import { useTranslation } from "@/hooks/useTranslation";
 import { Sculpture, ShapeType, ShapeTypeConfig } from "@/types";
-import * as MediaLibrary from "expo-media-library";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import {
-  Alert,
   Dimensions,
   FlatList,
   Image,
@@ -17,7 +14,7 @@ import {
   StatusBar,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -30,35 +27,10 @@ export default function NewGallery() {
   const [selectedSculpture, setSelectedSculpture] = useState<Sculpture | null>(null);
   const [showExportModal, setShowExportModal] = useState(false);
   const { data, loading, filteredSculpture } = useSculptureData();
-  const viewShotRef = useRef(null);
 
   const handleShape = (e: ShapeType) => {
     setShapeType(e);
   };
-
-  const handleCaptureAndSave = useCallback(async () => {
-    try {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert(
-          "Permission denied",
-          "You need to grant permission to save to gallery"
-        );
-        return;
-      }
-
-      const uri = await viewShotRef.current.capture();
-      console.log("Image captured at:", uri);
-
-      const asset = await MediaLibrary.createAssetAsync(uri);
-      await MediaLibrary.createAlbumAsync("SoundSculpture", asset, false);
-
-      Alert.alert("Success!", "The capture was saved to your gallery");
-    } catch (error) {
-      console.error("Error saving:", error);
-      Alert.alert("Error", "Could not save the capture");
-    }
-  }, []);
 
   const handleSearch = useCallback(
     async (shape: ShapeType) => {
@@ -111,11 +83,11 @@ export default function NewGallery() {
               >
                 <Icon name="Download" size={16} color="#3b82f6" />
               </TouchableOpacity>
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 className="bg-white/90 p-2 rounded-full"
               >
                 <Icon name="Heart" size={16} color="#ef4444" />
-              </TouchableOpacity>
+              </TouchableOpacity> */}
             </View>
             
             {/* Shape Badge */}
@@ -143,7 +115,7 @@ export default function NewGallery() {
                 {item.createdAt}
               </Text>
               <View 
-                className="w-4 h-4 rounded-full"
+                className="rounded-full w-4 h-4"
                 style={{ backgroundColor: item.color }}
               />
             </View>
@@ -156,7 +128,7 @@ export default function NewGallery() {
   const headerComponent = () => (
     <View>
       {/* Header */}
-      <View className="flex-row justify-between items-center border-neutral-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 border-b">
+      <View className="border-neutral-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 border-b">
         <View className="flex-row items-center">
           <View
             className="p-3 rounded-2xl"
@@ -168,7 +140,6 @@ export default function NewGallery() {
             {t.gallery.title}
           </Text>
         </View>
-        <ThemeToggle />
       </View>
 
       {/* Filter Section */}

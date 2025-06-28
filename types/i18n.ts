@@ -38,6 +38,12 @@ export interface TranslationKeys {
       flower: string;
       mountain: string;
       '3d': string;
+      galaxy: string;
+      crystal: string;
+      dna: string;
+      mandala: string;
+      tornado: string;
+      all: string;
     };
     recording: {
       duration: string;

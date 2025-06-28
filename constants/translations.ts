@@ -41,6 +41,7 @@ export const translations: Record<string, TranslationKeys> = {
         mandala: 'Mandala',
         tornado: 'Tornado',
         '3d': '3D',
+        all: "All"
       },
       recording: {
         duration: 's',
@@ -53,7 +54,7 @@ export const translations: Record<string, TranslationKeys> = {
       },
     },
     gallery: {
-      title: 'Your Gallery',
+      title: 'Your Gallery ',
       stats: {
         sculptures: 'Sculptures',
         average: 'Average ❤️',
@@ -179,7 +180,7 @@ export const translations: Record<string, TranslationKeys> = {
       settings: 'Configuración',
     },
     recording: {
-      title: '🎵 Escultura Sonora',
+      title: '🎵 Sound Sculpture',
       subtitle: 'Convierte sonidos en arte',
       firstSculpture: {
         title: 'Crea tu primera escultura',
@@ -196,6 +197,7 @@ export const translations: Record<string, TranslationKeys> = {
         mandala: 'Mandala',
         tornado: 'Tornado',
         '3d': '3D',
+        all: "Todos"
       },
       recording: {
         duration: 's',
