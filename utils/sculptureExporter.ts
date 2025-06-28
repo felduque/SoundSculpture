@@ -1,9 +1,110 @@
 import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
-import { Platform } from "react-native";
+import * as MediaLibrary from "expo-media-library";
+import { Platform, Alert } from "react-native";
+import { captureRef } from 'react-native-view-shot';
 import type { Sculpture } from "../types";
 
 export class SculptureExporter {
+  static async exportAsPNG(sculpture: Sculpture, viewRef?: any): Promise<void> {
+    try {
+      let imageUri: string;
+      
+      if (viewRef && Platform.OS !== 'web') {
+        // Capture the actual sculpture view
+        imageUri = await captureRef(viewRef, {
+          format: 'png',
+          quality: 1.0,
+          result: 'tmpfile',
+        });
+      } else {
+        // Generate a programmatic image
+        imageUri = await this.generateSculptureImage(sculpture, 'png');
+      }
+
+      const fileName = `sculpture-${sculpture.id}-${sculpture.shapeType}.png`;
+
+      if (Platform.OS === 'web') {
+        // For web, create download
+        const response = await fetch(imageUri);
+        const blob = await response.blob();
+        this.downloadBlobWeb(blob, fileName);
+      } else {
+        // For mobile, save to gallery
+        const permission = await MediaLibrary.requestPermissionsAsync();
+        if (permission.granted) {
+          await MediaLibrary.saveToLibraryAsync(imageUri);
+        } else {
+          // Fallback to sharing
+          if (await Sharing.isAvailableAsync()) {
+            await Sharing.shareAsync(imageUri, {
+              mimeType: "image/png",
+              dialogTitle: "Save Sculpture Image",
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error exporting PNG:", error);
+      throw new Error("Could not export sculpture as PNG");
+    }
+  }
+
+  static async exportAsGIF(sculpture: Sculpture): Promise<void> {
+    try {
+      const gifData = await this.generateAnimatedGIF(sculpture);
+      const fileName = `sculpture-${sculpture.id}-animated.gif`;
+      
+      if (Platform.OS === 'web') {
+        this.downloadBlobWeb(gifData, fileName);
+      } else {
+        const fileUri = FileSystem.documentDirectory + fileName;
+        await FileSystem.writeAsStringAsync(fileUri, gifData, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(fileUri, {
+            mimeType: "image/gif",
+            dialogTitle: "Save Animated Sculpture",
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error exporting GIF:", error);
+      throw new Error("Could not export sculpture as GIF");
+    }
+  }
+
+  static async exportAsMP4(sculpture: Sculpture): Promise<void> {
+    try {
+      const videoData = await this.generateSculptureVideo(sculpture);
+      const fileName = `sculpture-${sculpture.id}-animation.mp4`;
+      
+      if (Platform.OS === 'web') {
+        this.downloadBlobWeb(videoData, fileName);
+      } else {
+        const fileUri = FileSystem.documentDirectory + fileName;
+        await FileSystem.writeAsStringAsync(fileUri, videoData, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        
+        const permission = await MediaLibrary.requestPermissionsAsync();
+        if (permission.granted) {
+          await MediaLibrary.saveToLibraryAsync(fileUri);
+        } else if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(fileUri, {
+            mimeType: "video/mp4",
+            dialogTitle: "Save Sculpture Video",
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error exporting MP4:", error);
+      throw new Error("Could not export sculpture as MP4");
+    }
+  }
+
   static async exportAsOBJ(sculpture: Sculpture): Promise<void> {
     try {
       const objContent = this.generateOBJContent(sculpture);
@@ -22,7 +123,7 @@ export class SculptureExporter {
       }
     } catch (error) {
       console.error("Error exporting OBJ:", error);
-      throw new Error("Could not export sculpture");
+      throw new Error("Could not export sculpture as OBJ");
     }
   }
 
@@ -85,6 +186,7 @@ export class SculptureExporter {
           version: "2.0.0",
           exportedAt: new Date().toISOString(),
           format: "Sound Sculpture JSON",
+          platform: Platform.OS,
         },
       };
 
@@ -123,16 +225,135 @@ export class SculptureExporter {
         });
         const blob = this.base64ToBlob(audioData, 'audio/mp4');
         this.downloadBlobWeb(blob, fileName);
-      } else if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(sculpture.uri, {
-          mimeType: "audio/mp4",
-          dialogTitle: "Export Original Audio",
-        });
+      } else {
+        const permission = await MediaLibrary.requestPermissionsAsync();
+        if (permission.granted) {
+          await MediaLibrary.saveToLibraryAsync(sculpture.uri);
+        } else if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(sculpture.uri, {
+            mimeType: "audio/mp4",
+            dialogTitle: "Export Original Audio",
+          });
+        }
       }
     } catch (error) {
       console.error("Error exporting audio:", error);
       throw new Error("Could not export audio file");
     }
+  }
+
+  // Helper methods for generating content
+  private static async generateSculptureImage(sculpture: Sculpture, format: 'png' | 'jpg'): Promise<string> {
+    // Create a canvas-like representation for web or generate programmatically
+    if (Platform.OS === 'web') {
+      return this.generateWebCanvas(sculpture, format);
+    } else {
+      // For mobile, create a simple representation
+      return this.generateMobileImage(sculpture, format);
+    }
+  }
+
+  private static generateWebCanvas(sculpture: Sculpture, format: 'png' | 'jpg'): string {
+    // Create an HTML5 canvas and draw the sculpture
+    const canvas = document.createElement('canvas');
+    canvas.width = 800;
+    canvas.height = 600;
+    const ctx = canvas.getContext('2d')!;
+
+    // Background
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw sculpture points
+    sculpture.points.forEach((point, index) => {
+      const x = (point.x / 400) * canvas.width;
+      const y = (point.y / 400) * canvas.height;
+      const radius = Math.max(2, point.size / 2);
+
+      // Create gradient
+      const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+      gradient.addColorStop(0, sculpture.color);
+      gradient.addColorStop(1, sculpture.color + '40');
+
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Add glow effect
+      ctx.shadowColor = sculpture.color;
+      ctx.shadowBlur = 10;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    });
+
+    return canvas.toDataURL(`image/${format}`, 0.9);
+  }
+
+  private static async generateMobileImage(sculpture: Sculpture, format: 'png' | 'jpg'): Promise<string> {
+    // For mobile, we'll create a simple SVG and convert it
+    const svgContent = this.generateSVGContent(sculpture);
+    
+    // Convert SVG to base64 data URL
+    const base64SVG = btoa(svgContent);
+    return `data:image/svg+xml;base64,${base64SVG}`;
+  }
+
+  private static async generateAnimatedGIF(sculpture: Sculpture): Promise<Blob> {
+    // Simplified GIF generation - in a real app, you'd use a proper GIF encoder
+    const frames: string[] = [];
+    const frameCount = 30;
+
+    for (let i = 0; i < frameCount; i++) {
+      const progress = i / frameCount;
+      const frameData = await this.generateAnimationFrame(sculpture, progress);
+      frames.push(frameData);
+    }
+
+    // Create a simple animated representation
+    // In a real implementation, you'd use a library like gif.js
+    return new Blob(['GIF animation placeholder'], { type: 'image/gif' });
+  }
+
+  private static async generateSculptureVideo(sculpture: Sculpture): Promise<Blob> {
+    // Video generation would require a more complex implementation
+    // For now, return a placeholder
+    return new Blob(['MP4 video placeholder'], { type: 'video/mp4' });
+  }
+
+  private static async generateAnimationFrame(sculpture: Sculpture, progress: number): Promise<string> {
+    // Generate a single frame of animation
+    if (Platform.OS === 'web') {
+      const canvas = document.createElement('canvas');
+      canvas.width = 800;
+      canvas.height = 600;
+      const ctx = canvas.getContext('2d')!;
+
+      // Background
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Animate sculpture points
+      sculpture.points.forEach((point, index) => {
+        const animationOffset = Math.sin(progress * Math.PI * 2 + index * 0.1) * 10;
+        const x = (point.x / 400) * canvas.width + animationOffset;
+        const y = (point.y / 400) * canvas.height + animationOffset;
+        const radius = Math.max(2, point.size / 2) * (1 + Math.sin(progress * Math.PI * 2) * 0.2);
+
+        const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+        gradient.addColorStop(0, sculpture.color);
+        gradient.addColorStop(1, sculpture.color + '40');
+
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      return canvas.toDataURL('image/png');
+    }
+    
+    return '';
   }
 
   private static generateOBJContent(sculpture: Sculpture): string {

@@ -4,6 +4,7 @@ import { shapesFilter, shapeTypes } from "@/constants/shapes";
 import { useSculptureData } from "@/hooks/useSculptureData";
 import { useTranslation } from "@/hooks/useTranslation";
 import { Sculpture, ShapeType, ShapeTypeConfig } from "@/types";
+import { useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
   Dimensions,
@@ -22,6 +23,7 @@ const { width } = Dimensions.get("window");
 const CARD_WIDTH = (width - 48) / 2;
 
 export default function NewGallery() {
+  const router = useRouter();
   const { t } = useTranslation();
   const [shapeType, setShapeType] = useState<ShapeType>("all");
   const [selectedSculpture, setSelectedSculpture] = useState<Sculpture | null>(null);
@@ -45,6 +47,10 @@ export default function NewGallery() {
     setShowExportModal(true);
   };
 
+  const handleSculpturePress = (sculpture: Sculpture) => {
+    router.push(`/sculpture/${sculpture.id}`);
+  };
+
   const renderGalleryItem: ListRenderItem<Sculpture> = ({ item, index }) => {
     const shape = shapeTypes.find((e) => e.id === item.shapeType) as ShapeTypeConfig;
     
@@ -52,6 +58,7 @@ export default function NewGallery() {
       <View style={{ width: CARD_WIDTH, marginBottom: 20 }}>
         <TouchableOpacity
           activeOpacity={0.95}
+          onPress={() => handleSculpturePress(item)}
           className="bg-white dark:bg-neutral-900 rounded-3xl overflow-hidden"
           style={{
             shadowColor: "#000",
@@ -78,16 +85,14 @@ export default function NewGallery() {
             {/* Action Buttons */}
             <View className="top-3 right-3 absolute flex-row gap-2">
               <TouchableOpacity
-                onPress={() => handleExportSculpture(item)}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  handleExportSculpture(item);
+                }}
                 className="bg-white/90 p-2 rounded-full"
               >
                 <Icon name="Download" size={16} color="#3b82f6" />
               </TouchableOpacity>
-              {/* <TouchableOpacity
-                className="bg-white/90 p-2 rounded-full"
-              >
-                <Icon name="Heart" size={16} color="#ef4444" />
-              </TouchableOpacity> */}
             </View>
             
             {/* Shape Badge */}
@@ -99,6 +104,13 @@ export default function NewGallery() {
               <Text className="font-medium text-white text-xs">
                 {t.recording.shapes[shape?.id]}
               </Text>
+            </View>
+
+            {/* Play Indicator */}
+            <View className="bottom-3 right-3 absolute">
+              <View className="bg-white/90 p-2 rounded-full">
+                <Icon name="Play" size={12} color="#3b82f6" />
+              </View>
             </View>
           </View>
 
@@ -209,7 +221,7 @@ export default function NewGallery() {
           </View>
           <View className="items-center">
             <Text className="font-bold text-emerald-600 text-xl dark:text-emerald-400">
-              {data.reduce((acc, sculpture) => acc + sculpture.duration, 0) / 1000 / 60 | 0}m
+              {Math.floor(data.reduce((acc, sculpture) => acc + sculpture.duration, 0) / 1000 / 60)}m
             </Text>
             <Text className="text-neutral-500 text-sm dark:text-neutral-400">
               Total Audio
